@@ -22,7 +22,10 @@
 	<link rel="stylesheet" href="/assets/trumbowyg/dist/ui/trumbowyg.min.css" />
 </head>
 
+<!--CA Control Panel-->
+
 <body>
+	
 	
 	<!-- Index Page -->
 	<div class="w3-animate-right page" id="index">
@@ -43,7 +46,7 @@
 			</div>
 		</div>
 		<div class="w3-row">
-			<div class="w3-col s12 m6 w3-padding-16 w3-container">
+			<div class="w3-col s12 m6 w3-container w3-padding-16">
 				<div class="banner w3-display-container">
 					<div class="w3-center">
 						<img class="w3-image" src="https://source.unsplash.com/BLF5vzY6d7s/640x380" style="width:100%" />
@@ -59,14 +62,13 @@
 					</div>
 				</div>
 			</div>
-			<div class="w3-col s12 m6 w3-padding-16 w3-container">
-				<a href="#question" class="w3-button w3-theme-l2 w3-block">Question</a>
+			<div class="w3-col s12 m6 w3-container w3-padding-16">
+				<a href="#question" class="w3-button w3-xlarge w3-theme-l2 w3-block">Question</a>
 				<div class="w3-section"></div>
-				<a href="#work-list" class="w3-button w3-theme-l2 w3-block">Work</a>
+				<a href="#work" class="w3-button w3-xlarge w3-theme-l2 w3-block">Work</a>
 			</div>
 		</div>
 	</div>
-
 	<!-- Question page -->
 	<div class="page w3-animate-right" id="question">
 		<div class="w3-theme w3-card-4 w3-padding">
@@ -79,16 +81,20 @@
 		<div class="w3-section"></div>
 		<div class="w3-row">
 			<div class="w3-col s12 m6 w3-container w3-padding-16">
-				<div class="w3-row">
-					<select class="w3-col s4 w3-select w3-border" id="filter-by">
-						<option value="not-answered">Not Answered</option>
-						<option value="answered">Answered</option>
-					</select>
-					<div class="w3-col s4"></div>
-					<select class="w3-right w3-col s4 w3-select w3-border" id="sort-by">
-						<option value="updatedAt">Updated</option>
-						<option value="createdAt">Created</option>
-					</select>
+				<div class="w3-row w3-card">
+					<div class="day-panel">
+						<button class="w3-col s3 w3-button w3-block w3-theme-light" id="prev-day"><i class="fa fa-chevron-left"></i></button>
+						<button class="w3-col s6 w3-button w3-block w3-theme-l2" id="to-day"></button>
+						<button class="w3-col s3 w3-button w3-block w3-theme-light" id="next-day"><i class="fa fa-chevron-right"></i></button>
+					</div>
+					<div class="filter-panel">
+						<select class="w3-col s6 w3-select w3-border" id="by-answer">
+							<option value="all">All</option>
+							<option value="not-answered">Not Answered</option>
+							<option value="answered">Answered</option>
+						</select>
+						<select class="w3-col s6 w3-select w3-border" id="by-user"></select>
+					</div>
 				</div>
 				<div class="w3-section"></div>
 				<ul id="contents" class="w3-ul w3-card"></ul>
@@ -97,79 +103,96 @@
 					<button id="load-more-button" class="w3-button w3-circle w3-theme-l2 w3-xlarge"><i class="fa fa-arrow-down"></i></button>
 				</div>
 			</div>
-			<div class="w3-col s12 m6 w3-container w3-padding-16">
-				<div id="answer"></div>
-				<button class="w3-button w3-block w3-theme-l1 submit" disabled="">Submit</button>
+		</div>
+		<div class="w3-modal" id="answer-modal">
+			<div class="w3-modal-content w3-animate-zoom">
+				<div class="w3-row">
+					<div class="w3-col s12 m6 w3-container w3-padding-16 question-area">
+						<div class="w3-card">
+							<div id="question" class="w3-padding w3-theme-light"></div>
+							<ul class="w3-ul w3-border-top w3-tiny">
+								<li class="user-email"></li>
+								<li class="created-at"></li>
+							</il>
+						</div>
+						<div class="w3-section"></div>
+						<ul class="w3-card w3-ul">
+							<li>Answered by</li>
+							<li class="answered-by w3-tiny"></li>
+							<li class="answered-at w3-tiny"></li>
+						</ul>
+					</div>
+					<div class="w3-col s12 m6 w3-container answer-area">
+						<div id="answer"></div>
+					</div>
+				</div>
+				<div class="w3-row">
+					<button class="w3-button w3-theme-l4 w3-block w3-col s4 w3-block close"><i class="fa fa-close"></i></button>
+					<button class="w3-button w3-col s8 w3-block w3-theme done"><i class="fa fa-check"></i></button>
+				</div>
 			</div>
 		</div>
 	</div>
-
-	<!-- Work List -->
-	<div class="page w3-animate-top" id="work-list">
+	<!-- Work page -->
+	<div class="page w3-animate-right" id="work">
 		<div class="w3-theme w3-card-4 w3-padding">
 			<button class="w3-button w3-large go-back"><i class="fa fa-arrow-left"></i></button>
-			<button class="w3-button w3-large">
+			<a href="/ca" class="w3-button w3-large">
 				<img src="/assets/imgs/gst_main.svg" style="max-width: 44px; max-height: 38px;"/>
-			</button>
+			</a>
 			<button class="w3-button w3-large w3-right refresh"><i class="fa fa-refresh"></i></button>
 		</div>
 		<div class="w3-section"></div>
 		<div class="w3-row">
-			<div class="w3-col s6 w3-padding">
-				<select class="w3-select w3-border" id="filter-by">
-					<option value="pending">Pending</option>
-					<option value="initiated">Initiated</option>
-					<option value="completed">Completed</option>
-					<option value="asked-by">Asked by</option>
-				</select>
-			</div>
-			<div class="w3-col s6 w3-padding">
-				<select class="w3-select w3-border" id="sort-by">
-					<option value="createdAt">Created</option>
-					<option value="updatedAt">Updated</option>
-				</select>
-			</div>
-		</div>
-		<div class="w3-container w3-padding-16">
-			<div id="contents" class="w3-bar-block w3-card"></div>
-			<div class="w3-section"></div>
-			<div style="display: flex; justify-content: center; align-items: center;">
-				<button id="load-more-button" class="w3-button w3-circle w3-theme-l2 w3-xlarge"><i class="fa fa-arrow-down"></i></button>
-			</div>
-		</div>
-	</div>
-
-	<!-- Work Detail -->
-	<div class="page w3-animate-top" id="work-detail">
-		<div class="w3-theme w3-card-4 w3-padding">
-			<button class="w3-button w3-large go-back"><i class="fa fa-arrow-left"></i></button>
-			<button class="w3-button w3-large">
-				<img src="/assets/imgs/gst_main.svg" style="max-width: 44px; max-height: 38px;"/>
-			</button>
-		</div>
-		<div class="w3-section"></div>
-		<div class="w3-container w3-padding-16">
-			<div class="w3-container w3-padding-16 w3-theme-l3">
-				<div class="type"></div>
-				<div class="created-by w3-small"></div>
-				<div class="created-at w3-tiny"></div>
-			</div>
-			<ul id="files" class="w3-ul w3-border"></ul>
-			<div class="w3-section"></div>
-			<form id="status-form">
-				<div class="w3-row">
-					<select class="w3-col s3 w3-select w3-border-top w3-border-left status" id="status" name="status">
-						<option value="initiated">Initiated</option>
-						<option value="pending">Pending</option>
-						<option value="completed">Completed</option>
-					</select>
-					<input type="text" class="w3-col s9 w3-input w3-border-top w3-border-left w3-border-right message" id="message" name="message" placeholder="Write something about this case" />
-					<button class="w3-button w3-block w3-col s12 w3-theme-l2" id="submit">Submit</button>
+			<div class="w3-col s12 m6 w3-container w3-padding-16">
+				<div class="w3-row w3-card">
+					<div class="day-panel">
+						<button class="w3-col s3 w3-button w3-block w3-theme-light" id="prev-day"><i class="fa fa-chevron-left"></i></button>
+						<button class="w3-col s6 w3-button w3-block w3-theme-l2" id="to-day"></button>
+						<button class="w3-col s3 w3-button w3-block w3-theme-light" id="next-day"><i class="fa fa-chevron-right"></i></button>
+					</div>
+					<div class="filter-panel">
+						<select class="w3-col s6 w3-select w3-border" id="by-status"></select>
+						<select class="w3-col s6 w3-select w3-border" id="by-user"></select>
+					</div>
 				</div>
-			</form>
+				<div class="w3-section"></div>
+				<ul id="contents" class="w3-ul w3-card"></ul>
+				<div class="w3-section"></div>
+				<div style="display: flex; justify-content: center; align-items: center;">
+					<button id="load-more-button" class="w3-button w3-circle w3-theme-l2 w3-xlarge"><i class="fa fa-arrow-down"></i></button>
+				</div>
+			</div>
+		</div>
+		<div class="w3-modal" id="work-modal">
+			<div class="w3-modal-content w3-animate-zoom">
+				<div class="w3-card w3-row">
+					<div class="w3-col s12 m6">
+						<div class="w3-container w3-padding-16 w3-theme-l3" style="box-shadow: 0 2px 5px 0 rgba(0,0,0,0.16);z-index: 1;position: relative;">
+							<span class="w3-right w3-xlarge close" style="cursor: pointer;"><i class="fa fa-close"></i></span>
+							<div class="type w3-large"></div>
+							<div class="w3-small user"></div>
+							<div class="w3-tiny created-at"></div>
+						</div>
+						<div class="w3-container w3-padding-16 w3-theme-l4">
+							<form id="status-change-form">
+								<input type="text" class="w3-input w3-border w3-small" name="status" id="status" /><div class="w3-section"></div>
+								<input type="text" class="w3-input w3-border w3-small" name="message" id="message" /><div class="w3-section"></div>
+								<button class="w3-button w3-block w3-theme-l2"><i class="fa fa-check"></i></button>
+							</form>
+							<div class="w3-section"></div>
+							<div class="updated-at w3-tiny w3-col s6"></div>
+						</div>
+					</div>
+					<div class="w3-col s12 m6">
+						<ul class="w3-ul files"></ul>
+					</div>
+					
+				</div>
+			</div>
 		</div>
 	</div>
-
+	
 	<script src="index.js"></script>
 </body>
 </html>

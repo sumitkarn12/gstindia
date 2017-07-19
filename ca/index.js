@@ -2,13 +2,9 @@
 
 Parse.initialize("gZcENVmcvqfSSeiIomLKUxH8lLkWhhfPOy7Hml6N", "Oqk4oWh3lpBY7W5ewRGGB4REw4zflX3xzgATxXpk");
 Parse.serverURL = 'https://parseapi.back4app.com/';
+Parse.Config.get();
 
-const db = new Dexie( "GST" );
-db.version( 1 ).stores({
-	"asked": "++objectId, name, email, question, createdAt, updatedAt",
-	"question": "++objectId, name, email, question, answer, answeredBy, createdAt, updatedAt"
-});
-db.open().catch( console.info );
+var app = null, _index = null, _questionpage = null, _users = null, _workpage = null;
 
 toastr.options = {
 	"progressBar": true,
@@ -31,7 +27,41 @@ $.fn.serializeObject = function() {
 	$.each($.map(this.serializeArray(), elementMapper), appendToResult);
 	return o;
 };
-
+const UserManagement = Backbone.View.extend({
+	initialize: function() {
+		this.users = new Map();
+		return this;
+	},
+	fetch: function( id ) {
+		var self = this;
+		return new Promise(( resolve, reject )=>{
+			var user = self.users.get( id );
+			if( user ) {
+				resolve( user );
+			} else {
+				var userQuery = new Parse.Query( Parse.User );
+				userQuery.get( id ).then( res => {
+					self.users.set( res.id, res );
+					resolve( res );
+				}).catch( reject );
+			}
+		});
+	}
+});
+const Option = Backbone.Collection.extend({
+	initialize: function( attribute, el ) {
+		el.append( "<option value=''>All</option>" );
+		this.on("add", ( mdl )=>{
+			var val = mdl.get( attribute );
+			el.append(`<option value="${mdl.id}">${val}</option>`);
+		});
+		this.on("remove", ( mdl )=> el.find("[value=${mdl.id}]").remove() );
+		this.on("reset", ( mdl )=> {
+			el.empty();
+			el.append( "<option value=''>All</option>" );
+		});
+	}
+});
 const Waiter = Backbone.View.extend({
 	template: `<div style="display:none;"><div style="display:flex; justify-content:center; align-items:center; height: 150px; font-size: 48px;"><i class="fa fa-circle-o-notch w3-spin"></i></div></div>`,
 	initialize: function() {
@@ -46,10 +76,7 @@ const Waiter = Backbone.View.extend({
 		this.$el.hide();
 		return this;
 	}
-
 });
-var app = null, _index = null, _questionpage = null, _questiondetailpage = null, _worklistpage = null, _workdetailpage = null;
-
 const IndexPage = Backbone.View.extend({
 	el: "#index",
 	initialize: function() {
@@ -78,35 +105,49 @@ const IndexPage = Backbone.View.extend({
 			location.href = "/auth";
 	}
 });
-
 const QuestionPage = Backbone.View.extend({
 	el: "#question",
-	skip: 0,
-	limit: 100,
-	collection: new Map(),
-	waiter: new Waiter,
 	template: `
-		<li data-id="<%= objectId %>" class="question-list" style="cursor: pointer;">
+		<li id="li-<%= objectId %>" data-id="<%= objectId %>" class="question-list <%= answered %> <%= user_email %>" style="cursor: pointer;">
 			<div><%= question %></div>
-			<div class="w3-small user-email w3-text-red"></div>
-			<div class="w3-tiny"><%= updatedAt %></div>
-		</li>
-	`,
+			<div class="w3-small user-email w3-text-red"><%= user_email %></div>
+			<div class="w3-tiny updated-at"><%= updatedAt %></div>
+		</li>`,
+	model: Parse.Object.extend("asked"),
 	initialize: function() {
-		var self = this;
+		this.skip = 0;
+		this.limit = 100;
+		this.collection = new Map();
+		this.waiter = new Waiter();
+		this.day = new Date(new Date().toDateString());
+		this.$el.find("#to-day").html( this.day.toDateString() );
 		this.$el.prepend( this.waiter.$el );
 		this.template = _.template( this.template );
+		this.userSet = new Option( "user_email", this.$el.find("#by-user") );
 		this.$el.find("#load-more-button").click();
-		this.$el.find("#answer").trumbowyg({
-			autogrow: true,
+		this.tbw = this.$el.find("#answer-modal #answer").trumbowyg({
 			btns: [
-				['formatting','bold','italic' ],
-				['link','insertImage'],
-				['orderedList'],
+				['formatting',"bold", "italic"],
+				['link', 'insertImage', 'orderedList'],
 				['fullscreen']
 			]
 		});
-		this.$el.find(".trumbowyg-box").css({"margin": 0});
+		this.tbw.on( "tbwchange", (ev)=>{
+			ev.preventDefault();
+			var text = $.trim($( ev.currentTarget ).text());
+			if( text == "" )
+				this.$el.find("#answer-modal .done").attr( "disabled", "" );
+			else
+				this.$el.find("#answer-modal .done").removeAttr( "disabled" );
+		});
+		this.tbw.on( "tbwpaste", (ev)=>{
+			ev.preventDefault();
+			var text = $.trim($( ev.currentTarget ).text());
+			if( text == "" )
+				this.$el.find("#answer-modal .done").attr( "disabled", "" );
+			else
+				this.$el.find("#answer-modal .done").removeAttr( "disabled" );
+		});
 		return this;
 	},
 	render: function() {
@@ -114,319 +155,368 @@ const QuestionPage = Backbone.View.extend({
 		this.$el.show();
 		return this;
 	},
-	events: {
-		"click .go-back": "goBack",
-		"click .refresh": "refresh",
-		"click .question-list": "answerQuestion",
-		"click .submit": "submitAnswer",
-		"change #filter-by": "changeFilterBy",
-		"change #sort-by": "changeSortBy",
-		"click #load-more-button": "load_more"
-	},
-	answerQuestion: function( ev ) {
-		ev.preventDefault();
-		var id = $( ev.currentTarget ).data( "id" );
-		var question = this.collection.get( id );
-		this.model = question;
-		this.$el.find("#answer").html( question.get( "answer" ) );
-		this.$el.find(".question-list").removeClass( "w3-theme" );
-		this.$el.find(".submit").removeAttr( "disabled" );
-		$( ev.currentTarget ).addClass( "w3-theme" );
-	},
-	submitAnswer: function( ev ) {
-		ev.preventDefault();
-		var self = this;
-		var answer = $.trim(this.$el.find("#answer").html());
-		if( answer == "" ){
-			toastr.info( "Answer can't be null" );
-			return;
-		}
-		if( !this.model ) {
-			toastr.error( "Question not found" );
-			return;
-		}
-		if( Parse.User.current().get( "username" ) == this.model.get( "user_email" ) ) {
-			toastr.error( "You can't answer this question" );
-			return;
-		}
-		this.model.set( "answer", answer );
-		this.model.set( "answeredBy", Parse.User.current() );
-		this.model.set( "answeredAt", new Date() );
-		this.waiter.render();
-		this.$el.find(".submit").attr( "disabled", "" );
-		this.model.save( null ).then(r=>{
-			self.waiter.stop();
-			toastr.info( "Answered" );
-		}).catch(err=>{
-			self.waiter.stop();
-			console.log( err );
-			toastr.info( err.message, "Error" );
-		});
-	},
-	refresh: function( ev ) {
-		ev.preventDefault();
-		this.skip = 0;
-		ev.preventDefault();
-		this.$el.find("#contents").empty();
-		this.collection.clear();
-		this.$el.find("#load-more-button").click();
-	},
-	changeFilterBy: function( ev ) {
-		ev.preventDefault();
-		var self = this;
-		var value = $.trim($( ev.currentTarget ).val());
-		if ( value == "answered" ) {
-			self.query = new Parse.Query( Parse.Object.extend('asked') );
-			self.query.exists( "answer" );
-			this.skip = 0;
-			this.$el.find("#contents").empty();
-			this.collection.clear();
-			this.$el.find("#load-more-button").click();			
-		} else if ( value == "not-answered" ) {
-			self.query = new Parse.Query( Parse.Object.extend('asked') );
-			self.query.doesNotExist( "answer" );
-			this.skip = 0;
-			this.$el.find("#contents").empty();
-			this.collection.clear();
-			this.$el.find("#load-more-button").click();			
-		}
-	},
-	changeSortBy: function( ev ) {
-		ev.preventDefault();
-		this.skip = 0;
-		this.$el.find("#contents").empty();
-		this.collection.clear();
-		this.$el.find("#load-more-button").click();
-	},
-	load_more: function( ev ) {
-		ev.preventDefault();
-		var self = this;
-		this.waiter.render();
-		var sortBy = this.$el.find("#sort-by").val();
-		if( !self.query ) {
-			self.query = new Parse.Query( Parse.Object.extend("asked") );
-			self.query.doesNotExist( "answer" );
-		}
-		self.query.limit( self.limit );
-		self.query.skip( self.skip );
-		self.query.descending( sortBy );
-		self.query.find().then(res=>{
-			$.each( res, ( i, e ) => {
-				try {
-					self.collection.set( e.id, e );
-					var json = e.toJSON();
-					json.updatedAt = e.get("updatedAt").toLocaleString();
-					var card = $(self.template( json ));
-					card.find(".user-email").html( e.get( "user_email" ) );
-					self.$el.find("#contents").append( card );
-				} catch(e){
-					console.log(e)
-				}
+	renderList: function( object ) {
+		this.collection.set( object.id, object );
+		var ul = this.$el.find("#contents");
+		var li = ul.find("#li-"+object.id);
+		var json = object.toJSON();
+		json.answered = object.has("answer");
+		json.updatedAt = object.get("updatedAt").toLocaleString();
+		if( li.length == 0 ) {
+			json.user_email = object.get("user_email").replace(/\W+/g,"");
+			this.userSet.add({
+				id: object.get("user_email").replace(/\W+/g,""),
+				user_email: object.get("user_email")
 			});
-			if( res.length == 0 )
-				self.$el.find("#load-more-button").hide();
-			else
-				self.$el.find("#load-more-button").show();
-			self.skip += self.limit;
-			self.waiter.stop();
-		});
-	},
-	goBack: function( ev ) {
-		ev.preventDefault();
-		history.back();
-	}
-});
-
-const WorkListPage = Backbone.View.extend({
-	el: "#work-list",
-	skip: 0,
-	limit: 100,
-	collection: new Map(),
-	waiter: new Waiter,
-	template: `<a href="#work-detail/<%= objectId %>" class="w3-bar-item w3-hover-gray"><%= type %></a>`,
-	initialize: function() {
-		this.$el.append( this.waiter.$el );
-		var self = this;
-		this.template = _.template( this.template );
-		this.$el.find("#load-more-button").click();
-		return this;
-	},
-	render: function( id ) {
-		$(".page").hide();
-		this.$el.show();
-		return this;
-	},
-	events: {
-		"click .go-back": "goBack",
-		"click .refresh": "refresh",
-		"change #filter-by": "changeFilterBy",
-		"change #sort-by": "changeSortBy",
-		"click #load-more-button": "load_more"
-	},
-	refresh: function( ev ) {
-		ev.preventDefault();
-		this.skip = 0;
-		this.$el.find("#contents").empty();					
-		this.collection.clear();
-		this.$el.find("#load-more-button>button").click();
-	},
-	changeFilterBy: function( ev ) {
-		ev.preventDefault();
-		var self = this;
-		var value = $.trim($( ev.currentTarget ).val());
-		if( value == "asked-by" ) {
-			var userSelector = new UserSelectorPage();
-			userSelector.render(function( users ) {
-				self.query = new Parse.Query( Parse.Object.extend('cawork') );
-				self.query.containedIn( "user", users );
-				self.skip = 0;
-				self.$el.find("#contents").empty();
-				self.collection.clear();
-				self.$el.find("#load-more-button").click();			
-			});
+			try {
+				var card = $(this.template( json ));
+				card.find(".user-email").html( object.get("user_email") );
+				ul.append( card );
+			} catch(e){ console.log(e) }
 		} else {
-			self.query = new Parse.Query( Parse.Object.extend('cawork') );
-			self.query.equalTo( "status", value );
-			this.skip = 0;
-			this.$el.find("#contents").empty();
-			this.collection.clear();
-			this.$el.find("#load-more-button").click();			
+			var opp = !json.answered;
+			li.addClass( json.answered.toString() );
+			li.removeClass( opp.toString() );
+			li.find(".updated-at").html( json.updatedAt );
+			this.applyFilter( null );
 		}
 	},
-	changeSortBy: function( ev ) {
+	events: {
+		"click .go-back": "goBack",
+		"click #prev-day": "prevDay",
+		"click #to-day": "toDay",
+		"click #next-day": "nextDay",
+		"click .refresh": "refresh",
+		"click #answer-modal .close": "closeAnswer",
+		"click #answer-modal .done": "doneAnswer",
+		"click .question-list": "openAnswer",
+		"change .filter-panel": "applyFilter",
+		"click #load-more-button": "load_more"
+	},
+	toDay: function( ev ) {
 		ev.preventDefault();
+		let day = new Date( new Date().toDateString() );
+		this.changeDay( day );
+	},
+	prevDay: function( ev ) {
+		ev.preventDefault();
+		let day = new Date( this.day.getTime() - 24*60*60*1000 );
+		this.changeDay( day );
+	},
+	nextDay: function( ev ) {
+		ev.preventDefault();
+		let day = new Date( this.day.getTime() + 24*60*60*1000 );
+		this.changeDay( day );
+	},
+	changeDay: function( day ) {
+		this.day = day;
+		this.$el.find("#to-day").html( this.day.toDateString() );
 		this.skip = 0;
-		this.$el.find("#contents").empty();					
-		this.collection.clear();
+		this.$el.find("#contents").empty();
+		this.userSet.reset();
 		this.$el.find("#load-more-button").click();
+	},
+	applyFilter: function( ev ) {
+		try {ev.preventDefault();}catch(e){}
+		this.$el.find(".question-list" ).hide();
+		var classList = "";
+		if( this.$el.find("#by-answer").val() == "answered" )
+			classList += ".true";
+		else if( this.$el.find("#by-answer").val() == "not-answered" )
+			classList += ".false";
+		classList += "."+this.$el.find("#by-user").val();
+		classList = classList.replace( /\./g, " " ).replace(/ {2,}/g, " ").trim().replace( / /g, "." );
+		if( classList.length > 0 )
+			classList = "."+classList;
+		this.$el.find(".question-list"+classList ).show();
+	},
+	refresh: function( ev ) {
+		ev.preventDefault();
+		this.changeDay( this.day );
 	},
 	load_more: function( ev ) {
 		ev.preventDefault();
 		var self = this;
 		this.waiter.render();
-		var sortBy = this.$el.find("#sort-by").val();
-		var queryType = this.$el.find("#query-type").val();
-		if( !self.query ) {
-			self.query = new Parse.Query( Parse.Object.extend("cawork") );
-			self.query.equalTo( "status", "pending" );
-		}
-		self.query.limit( self.limit );
-		self.query.skip( self.skip );
-		self.query.descending( sortBy );
-		self.query.find().then(res=>{
-			self.waiter.stop();
+		var q = new Parse.Query( this.model );
+		q.greaterThanOrEqualTo( "createdAt", this.day );
+		q.lessThan( "createdAt", new Date( this.day.getTime() + 24*60*60*1000 ) );
+		q.limit( this.limit );
+		q.equalTo( "assignedTo", Parse.User.current() );
+		q.skip( this.skip );
+		q.descending( "updatedAt" );
+		q.find().then(res=>{
 			$.each( res, ( i, e ) => {
-				self.collection.set( e.id, e );
-				var json = e.toJSON();
-				json.type = json.type.toUpperCase().replace( /[_\-]/g, " " );
-				var card = self.template( json );
-				self.$el.find("#contents").append( card );
+				try {self.renderList( e );} catch(e){console.log(e);}
 			});
 			if( res.length == 0 )
 				self.$el.find("#load-more-button").hide();
 			else
 				self.$el.find("#load-more-button").show();
 			self.skip += self.limit;
+			self.waiter.stop();
+			self.applyFilter( null );
 		});
 	},
 	goBack: function( ev ) {
 		ev.preventDefault();
 		history.back();
+	},
+	getUser: function( id ) {
+		if( !_users ) _users = new UserManagement();
+		return _users.fetch( id );
+	},
+	openAnswer: function( ev ) {
+		ev.preventDefault();
+		var target = $( ev.currentTarget );
+		var id = target.data( "id" );
+		this.editable = this.collection.get( id );
+		this.$el.find("#answer-modal .done").attr( "disabled","" );
+		this.$el.find("#answer-modal #question").html( this.editable.get("question") );
+		this.$el.find("#answer-modal .user-email").html( this.editable.get("user_email") );
+		this.$el.find("#answer-modal .created-at").html( this.editable.get("createdAt").toLocaleString() );
+		if( this.editable.has( "answer" ) ) {
+			this.getUser( this.editable.get( "answeredBy" ).id ).then((r)=>{
+				this.$el.find("#answer-modal .answered-by").html( r.get("name") );
+			});
+			this.$el.find("#answer-modal .answered-at").html( this.editable.get("answeredAt").toLocaleString() );
+			this.$el.find("#answer-modal #answer").html( this.editable.get("answer") );
+			this.$el.find("#answer-modal .answered-at").parent().show();
+		} else {
+			this.$el.find("#answer-modal #answer").html( "" );
+			this.$el.find("#answer-modal .answered-at").parent().hide();
+		}
+		this.$el.find( "#answer-modal" ).show();
+	},
+	closeAnswer: function( ev ) {
+		ev.preventDefault();
+		this.$el.find( "#answer-modal" ).hide();
+		this.editable = null;
+	},
+	doneAnswer: function( ev ) {
+		ev.preventDefault();
+		var self = this;
+		this.$el.find( "#answer-modal" ).hide();
+		var answer = this.$el.find( "#answer-modal #answer" ).html();
+		this.editable.set( "answer", answer );
+		this.editable.set( "answeredBy", Parse.User.current() );
+		this.editable.set( "answeredAt", new Date() );
+		this.editable.save().then(res=>{
+			self.renderList( res );
+			toastr.info( "Saved" );
+		}).catch(err=>{
+			toastr.error( error.message, error.code );
+		});
 	}
 });
-
-const WorkDetailPage = Backbone.View.extend({
-	el: "#work-detail",
-	waiter: new Waiter,
+const WorkPage = Backbone.View.extend({
+	el: "#work",
+	skip: 0,
+	limit: 20,
+	collection: new Map(),
+	waiter: new Waiter(),
 	template: `
-		<li class="w3-display-container">
-			<div><%=filename%></div>
-			<div class="w3-display-right">
-				<a target="_blank" href="<%= url %>" class="w3-button w3-theme-l4"><i class="fa fa-download"></i></a>
+		<li id="li-<%= objectId %>" data-status="<%= status %>" data-id="<%= objectId %>" class="work-list <%=status%> <%=assignedTo%> <%=user%>" style="cursor: pointer;">
+			<div><%= type %></div>
+			<div class="w3-small">
+				<span class="user"></span>
 			</div>
-		</li>
-	`,
+			<div class="w3-tiny updated-at"><%= updatedAt %></div>
+			<div class="w3-small status"><%= status %></div>
+			<div class="w3-tiny message"><%= message %></div>
+		</li>`,
+	model: Parse.Object.extend("cawork"),
 	initialize: function() {
-		this.$el.append( this.waiter.$el );
-		var self = this;
+		this.day = new Date( new Date().toDateString() );
+		this.$el.prepend( this.waiter.$el );
 		this.template = _.template( this.template );
+		this.byStatus = new Option( "name", this.$el.find("#by-status") );
+		this.byUser = new Option( "name", this.$el.find("#by-user") );
+		this.$el.find("#to-day").html( this.day.toDateString() );
+		this.$el.find("#load-more-button").click();
 		return this;
 	},
-	render: function( id, model ) {
-		var self = this;
-		if( !model ) {
-			this.model = new Parse.Object( "cawork" );
-			this.model.set("objectId", id );
-		} else
-			this.model = model;
-		this.waiter.render();
-		this.fetch().then( r => {
-			self.waiter.stop();
-			var json = r.toJSON();
-			self.$el.find(".type").text( json.type.toUpperCase().replace( /[_\-]/g, " " ) );
-			self.$el.find(".created-at").html( r.get("createdAt").toLocaleString() );
-			var keys = _.keys( json );
-			keys = _.difference( keys, [ "ACL", "message", "createdAt", "updatedAt", "objectId", "type", "status", "assignedTo" ] );
-			self.$el.find("#files").empty();
-			$.each( keys, ( idx, el ) => {
-				var fileJSON = json[ el ];
-				fileJSON.filename = el.toUpperCase().replace( /[_\-]/g, " " );
-				var li = self.template( fileJSON );
-				self.$el.find("#files").append( li );
-			});
-			self.$el.find(".status").val( json.status );
-			self.$el.find(".message").val( json.message );
-		}).catch( console.warn );
+	render: function() {
 		$(".page").hide();
 		this.$el.show();
 		return this;
 	},
-	fetch: function() {
-		var self = this;
-		return new Promise(( resolve, reject ) => {
-			if( self.model.get( "type" ) ) {
-				resolve( self.model );
-			} else {
-				if( _worklistpage && _worklistpage.collection.get( self.model.id ) ) {
-					self.model = _worklistpage.collection.get( self.model.id );
-					resolve( self.model );
-				} else {
-					self.model.fetch().then( resolve ).catch( reject );
-				}
+	renderList: function( object ) {
+		var ul = this.$el.find( "#contents" );
+		var li = ul.find("#li-"+object.id);
+		this.collection.set( object.id, object );
+		var json = object.toJSON();
+		json.updatedAt = object.get("updatedAt").toLocaleString();
+		json.type = json.type.replace(/[\W_]/g, " ").toUpperCase();
+		if( li.length == 0 ) {
+			try {
+				var card = $(this.template( json ));
+				this.getUser(object.get("user").id).then(r=>{
+					card.find(".user").html( r.get("name") );
+					card.addClass( object.get("user").id );
+					this.byUser.add({
+						id: r.id,
+						name: r.get("name")
+					});
+				});
+				card.find(".status").html( object.get("status").toUpperCase() );
+				card.addClass( object.get("status") );
+				this.byStatus.add({
+					id: object.get("status"),
+					name: object.get("status").toUpperCase()
+				});
+				ul.append( card );
+			} catch(e){
+				console.log(e)
 			}
-		});
+		} else {
+			li.find(".updated-at").html(json.updatedAt);
+			li.find(".status").html(json.status);
+			li.find(".message").html(json.message);
+			var prevStatus = li.data( "status" );
+			li.removeClass( prevStatus );
+			li.addClass( json.status );
+		}
 	},
 	events: {
 		"click .go-back": "goBack",
-		"submit #status-form": "update_status"
+		"click #work-modal .close": "closeWorkModal",
+		"click .refresh": "refresh",
+		"click .work-list": "openWorkModal",
+		"click #prev-day": "prevDay",
+		"click #next-day": "nextDay",
+		"click #to-day": "toDay",
+		"change .filter-panel select": "applyFilter",
+		"submit #status-change-form": "changeStatus",
+		"click #load-more-button": "load_more"
 	},
-	update_status: function( ev ) {
+	prevDay: function( ev ) {
+		ev.preventDefault();
+		this.day = new Date( this.day.getTime() - 24*60*60*1000 );
+		this.changeDay( this.day );
+	},
+	nextDay: function( ev ) {
+		ev.preventDefault();
+		this.day = new Date( this.day.getTime() + 24*60*60*1000 );
+		this.changeDay( this.day );
+	},
+	toDay: function( ev ) {
+		ev.preventDefault();
+		this.day = new Date();
+		this.changeDay( this.day );
+	},
+	changeDay: function( day ) {
+		this.day = day;
+		this.$el.find("#to-day").html( this.day.toDateString() );
+		this.byUser.reset();
+		this.byStatus.reset();
+		this.skip = 0;
+		this.$el.find("#contents").empty();
+		this.$el.find("#load-more-button").click();
+	},
+	refresh: function( ev ) {
+		ev.preventDefault();
+		this.skip = 0;
+		ev.preventDefault();
+		this.$el.find("#contents").empty();
+		this.collection.clear();
+		this.$el.find("#load-more-button").click();
+	},
+	applyFilter: function( ev ) {
+		try {ev.preventDefault();}catch(e){}
+		this.$el.find(".work-list").hide();
+		var filter_class = "";
+		filter_class += "."+this.$el.find("#by-status").val();
+		filter_class += "."+this.$el.find("#by-user").val();
+		filter_class = filter_class.replace(/\./g, " ").replace(/ {2,}/g," ").trim().replace(/ /g,".");
+		if( filter_class.length > 0) filter_class = "."+filter_class;
+		filter_class = ".work-list"+filter_class.replace(/\.{2,}/g, "");
+		this.$el.find(filter_class.trim()).show();
+	},
+	load_more: function( ev ) {
+		ev.preventDefault();
+		var self = this;
+		this.waiter.render();
+		var q = new Parse.Query( this.model );
+		q.greaterThanOrEqualTo( "createdAt", this.day );
+		q.lessThan( "createdAt", new Date( this.day.getTime() + 24*60*60*1000 ) );
+		q.descending( "updatedAt" );
+		q.limit( self.limit );
+		q.skip( self.skip );
+		q.find().then(res=>{
+			$.each( res, ( i, e ) => {
+				self.renderList( e );
+			});
+			self.applyFilter( null );
+			if( res.length == 0 ) self.$el.find("#load-more-button").hide();
+			else self.$el.find("#load-more-button").show();
+			self.skip += self.limit;
+			self.waiter.stop();
+		});
+	},
+	getUser: function( id ) {
+		if( !_users ) _users = new UserManagement();
+		return _users.fetch( id );
+	},
+	goBack: function( ev ) {
+		ev.preventDefault();
+		history.back();
+	},
+	openWorkModal: function( ev ) {
+		ev.preventDefault();
+		var target = $( ev.currentTarget );
+		var id = target.data( "id" );
+		this.model = this.collection.get( id );
+		var modal = this.$el.find("#work-modal");
+		modal.find(".type").html( this.model.get("type") );
+		modal.find(".created-at").html( this.model.get("createdAt").toLocaleString() );
+		modal.find(".updated-at").html( this.model.get("updatedAt").toLocaleString() );
+		modal.find("#status").val( this.model.get("status") );
+		modal.find("#message").val( this.model.get("message") );
+		this.getUser( this.model.get("user").id ).then(r=> modal.find(".user").html( r.get("name") ) );
+		var template = `<li class="w3-display-container"><div><div class="name"><%= name %></div><div class="w3-tiny added-at"><%= addedAt %></div></div><div class="w3-display-right"><a download="<%=downloadAs%>" target="_blank" href="<%= url %>" class="w3-button w3-theme-l5"><i class="fa fa-download"></i></a></div></li>`;
+		modal.find(".files").empty();
+		template = _.template( template );
+		var downloadAs = this.model.get("user").id;
+		downloadAs += "-"+this.model.get("type").replace(/[\W_]/g, "");
+		$.each( this.model.get("files"), (i, fl)=>{
+			var ext = fl.file.url().substring( fl.file.url().lastIndexOf(".") );
+			ext = downloadAs+"-"+fl.name.replace(/[\W_]/g, "")+ext;
+			var li = template({ downloadAs: ext, name: fl.name, url: fl.file.url(), addedAt: fl.addedAt.toLocaleString()});
+			modal.find(".files").append(li);
+		});
+		modal.show();
+	},
+	closeWorkModal: function(e){
+		e.preventDefault();
+		this.$el.find("#work-modal").hide();
+	},
+	changeStatus: function( ev ) {
 		ev.preventDefault();
 		var self = this;
 		var form = $( ev.currentTarget ).serializeObject();
-		this.model.set( "status", form.status );
-		this.model.set( "message", form.message );
-		this.waiter.render();
-		this.model.save( null ).then(r=> this.waiter.stop() ).catch( console.warn );
-	},
-	goBack: function( ev ) {
-		ev.preventDefault();
-		history.back();
+		this.model.set("status", form.status.toLowerCase());
+		this.model.set("message", form.message);
+		this.model.save().then( response => {
+			self.renderList( response );
+			toastr.info( "Updated" );
+			self.applyFilter( null );
+		}).catch(err=>{
+			console.log( err );
+			toastr.error( err.message, err.code );
+		});
+		this.$el.find("#work-modal .close").click();
 	}
 });
-
 const UserSelectorPage = Backbone.View.extend({
 	waiter: new Waiter,
 	tagName: "div",
 	className: "w3-modal",
 	template: `
-			<li>
-				<input type="checkbox" class="w3-check" data-id="<%= objectId %>" style="position: relative; top: -8px;" />
-				<div style="display: inline-block;">
-					<div class="w3-text-teal"><%= name %></div>
-					<div class="w3-tiny w3-text-blue"><%= username %></div>
-					<div class="w3-tiny w3-text-blue"><%= mobile %></div>
-				</div>
+			<li data-id="<%= objectId %>" class="user-li" style="cursor:pointer;">
+				<div class="w3-text-teal"><%= name %></div>
+				<div class="w3-tiny w3-text-blue"><%= username %></div>
+				<div class="w3-tiny w3-text-blue"><%= mobile %></div>
 			</li>
 	`,
 	initialize: function() {
@@ -434,33 +524,41 @@ const UserSelectorPage = Backbone.View.extend({
 		this.selected = new Map();
 		this.collection = new Map();
 		this.$el.append(`
-				<div class="w3-modal-content w3-animate-zoom">
-	<div class="w3-container w3-padding-16">
-		<div class="w3-display-container w3-card">
-			<form id="search">
-			<div>
-				<input type="search" id="q" name="q" class="w3-input w3-border" placeholder="Enter name, email or mobile..." />
+	<div class="w3-modal-content w3-animate-zoom">
+		<div class="w3-container w3-padding-16">
+			<div class="w3-display-container w3-card">
+				<form id="search">
+					<div>
+						<input type="search" id="q" name="q" class="w3-input w3-border" placeholder="Enter name, email or mobile..." />
+					</div>
+					<div class="w3-display-right">
+						<button class="w3-button w3-border-left"><i class="fa fa-search"></i></button>
+					</div>
+				</form>
 			</div>
-			<div class="w3-display-right">
-				<button class="w3-button w3-border-left"><i class="fa fa-search"></i></button>
-			</div>
-			</form>
-		</div>
-		<div class="w3-section"></div>
-		<ul class="w3-ul w3-card contents"></ul>
-		<div class="w3-section"></div>
-		<div class="w3-row">
-			<div class="w3-col s2 w3-center">
-				<button id="close" class="w3-button w3-block w3-theme-l3"><i class="fa fa-close"></i></button>
-			</div>
-			<div class="w3-col s10">
-				<button id="done" class="w3-button w3-block w3-theme">Submit</button>
-			</div>
-		</div>
-	</div>	
+			<div class="w3-section"></div>
+			<ul class="w3-ul w3-card">
+				<li class="w3-large">Searched</li>
+				<div class="contents"></div>
+			</ul>
+			<div class="w3-section"></div>
+			<ul class="w3-ul w3-card">
+				<li class="w3-large">Selected</li>
+				<div class="selected"></div>
+			</ul>
+			<div class="w3-section"></div>
+			<div class="w3-row">
+				<div class="w3-col s2 w3-center">
+					<button id="close" class="w3-button w3-block w3-theme-l3"><i class="fa fa-close"></i></button>
 				</div>
+				<div class="w3-col s10">
+					<button id="done" class="w3-button w3-block w3-theme">Submit</button>
+				</div>
+			</div>
+		</div>
+	</div>
 		`);
-		this.$el.find(".w3-modal-content").append( this.waiter.$el );
+		this.$el.find(".w3-modal-content").prepend( this.waiter.$el );
 		$("body").append( this.$el );
 		var self = this;
 		this.template = _.template( this.template );
@@ -475,22 +573,27 @@ const UserSelectorPage = Backbone.View.extend({
 		"click #close": "close",
 		"click #done": "done",
 		"submit #search": "search",
-		"change .w3-ul input": "toggle"
+		"click .user-li": "toggle"
 	},
 	toggle: function( ev ) {
 		ev.preventDefault();
 		var target = $( ev.currentTarget );
 		var uid = target.data("id");
-		if( !ev.currentTarget.checked ) {
+		if( target.hasClass( "selected-li" ) ) {
 			this.selected.delete( uid );
+			target.removeClass( "selected-li" );
+			this.$el.find(".contents").append( target );
 		} else {
 			this.selected.set( uid, this.collection.get( uid ) );
+			target.addClass( "selected-li" );
+			this.$el.find(".selected").append( target );
 		}
 	},
 	search: function( ev ) {
 		ev.preventDefault();
 		var q = $( ev.currentTarget ).serializeObject().q;
 		var self = this;
+		self.$el.find(".contents").empty();
 		self.waiter.render();
 		var nameQ = new Parse.Query( Parse.User );
 		nameQ.startsWith( "name", q );
@@ -530,10 +633,9 @@ const UserSelectorPage = Backbone.View.extend({
 const Routes = Backbone.Router.extend({
 	routes: {
 		"": 									"index",
+		"ca": 									"ca",
 		"question":								"question",
-		"work-list":							"work_list",
-		"work-detail/:id":						"work_detail",
-		"auth": 								"auth"
+		"work":									"work"
 	},
 	execute: function(callback, args, name) {
 		if( !Parse.User.current() ) {
@@ -547,20 +649,42 @@ const Routes = Backbone.Router.extend({
 		if( !_index ) _index = new IndexPage();
 		_index.render();
 	},
+	ca: function() {
+		if( !_capage ) _capage = new CaPage();
+		_capage.render();
+	},
 	question: function() {
 		if( !_questionpage ) _questionpage = new QuestionPage();
 		_questionpage.render();
 	},
-	work_list: function() {
-		if( !_worklistpage ) _worklistpage = new WorkListPage();
-		_worklistpage.render();
-	},
-	work_detail: function( id ) {
-		if( !_workdetailpage ) _workdetailpage = new WorkDetailPage();
-		_workdetailpage.render( id );
+	work: function() {
+		if( !_workpage ) _workpage = new WorkPage();
+		_workpage.render();
 	}
 });
 app = new Routes();
-Backbone.history.start();
 
-
+$( document ).ready(()=>{
+	$(".page").hide();
+	var el = $(`<div style="height: 100vh; width: 100%; display: flex; justify-content: center; align-items:center;"><i class="fa fa-circle-o-notch fa-4x w3-spin"></i></div>`);
+	$("body").append( el );
+	if ( Parse.User.current() ) {
+		var cas = new Parse.Query( Parse.Object.extend("ca") );
+		cas.equalTo( "ca", Parse.User.current() );
+		cas.equalTo( "status", "active" );
+		cas.first().then( res => {
+			if( res ) {
+				el.remove();
+				Backbone.history.start();
+			} else {
+				el.find("i").remove();
+				el.html( "<h3 class='w3-center w3-container w3-padding-16'>Looks like you are not a CA or your account has not been activated yet. Please contact web admin</h3>" );
+			}
+		}).catch( err => {
+			toastr.error( err.message, err.code );
+			location.href="/auth";
+		});
+	} else {
+		location.href="/auth";
+	}
+});
