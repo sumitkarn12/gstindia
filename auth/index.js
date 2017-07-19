@@ -175,7 +175,7 @@ const Routes = Backbone.Router.extend({
 	logout: function() {
 		toastr.info( "Logging out" );
 		Parse.User.logOut().then(()=>{
-			location.href = "/";
+			location.href = "/auth";
 		}).catch(()=> {
 			location.href = "/";
 		});

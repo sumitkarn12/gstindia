@@ -64,151 +64,10 @@
 				<div class="w3-section"></div>
 				<a href="#ask-expert" class="w3-button w3-xlarge w3-theme-l2 w3-block">Ask Expert</a>
 				<div class="w3-section"></div>
-				<a href="#my-ca" class="w3-button w3-xlarge w3-theme-l2 w3-block">My CA</a>
+				<a href="#work" class="w3-button w3-xlarge w3-theme-l2 w3-block">My CA</a>
 			</div>
 		</div>
 	</div>
-
-	<!-- My CA -->
-	<div class="page w3-animate-top" id="my-ca">
-		<div class="w3-theme w3-card-4 w3-padding">
-			<button class="w3-button w3-large go-back"><i class="fa fa-arrow-left"></i></button>
-			<button class="w3-button w3-large">
-				<img src="assets/imgs/gst_main.svg" style="max-width: 44px; max-height: 38px;"/>
-			</button>
-			<button class="w3-button w3-large refresh w3-right"><i class="fa fa-refresh"></i></button>
-		</div>
-		<div class="w3-row">
-			<div class="w3-col s12 m6 l4 w3-container w3-padding-16 new-work">
-				<div class="w3-card">
-					<select id="type-changer" class="w3-select w3-theme-l5" style="border-bottom:1px solid red;">
-						<option value="income_tax_return">Income Tax Return</option>
-						<option value="gst">GST</option>
-						<option value="audit">Audit</option>
-					</select>
-					<div class="w3-container w3-padding-16" id="input-forms">
-						<div class="form_16 w3-display-container">
-							<div>
-								<label for="form_16">Form 16</label>
-								<input type="file" class="w3-input" name="form_16" id="form_16" />
-							</div>
-							<div class="w3-display-bottomright w3-xxlarge" style="display:none;"><i class="fa fa-circle-o-notch w3-spin"></i></div>
-						</div>
-						<div class="pan w3-display-container">
-							<div>
-								<label for="pan">PAN</label>
-								<input type="file" class="w3-input" name="pan" id="pan" />
-							</div>
-							<div class="w3-display-bottomright w3-xxlarge" style="display:none;"><i class="fa fa-circle-o-notch w3-spin"></i></div>
-						</div>
-						<div class="bank_statement w3-display-container">
-							<div>
-								<label for="bank_statement">BANK STATEMENT</label>
-								<input type="file" class="w3-input" name="bank_statement" id="bank_statement" />
-							</div>
-							<div class="w3-display-bottomright w3-xxlarge" style="display:none;"><i class="fa fa-circle-o-notch w3-spin"></i></div>
-						</div>
-						<div class="adhaar_card w3-display-container">
-							<div>
-								<label for="adhaar_card">ADHAAR CARD</label>
-								<input type="file" class="w3-input" name="adhaar_card" id="adhaar_card" />
-							</div>
-							<div class="w3-display-bottomright w3-xxlarge" style="display:none;"><i class="fa fa-circle-o-notch w3-spin"></i></div>
-						</div>
-						<div class="gstin w3-display-container">
-							<div>
-								<label for="gstin">GSTIN</label>
-								<input type="file" class="w3-input" name="gstin" id="gstin" />
-							</div>
-							<div class="w3-display-bottomright w3-xxlarge" style="display:none;"><i class="fa fa-circle-o-notch w3-spin"></i></div>
-						</div>
-						<div class="invoice_detail w3-display-container">
-							<div>
-								<label for="invoice_detail">INVOICE DETAIL</label>
-								<input type="file" class="w3-input" name="invoice_detail" id="invoice_detail" />
-							</div>
-							<div class="w3-display-bottomright w3-xxlarge" style="display:none;"><i class="fa fa-circle-o-notch w3-spin"></i></div>
-						</div>
-						<div class="address_proof w3-display-container">
-							<div>
-								<label for="address_proof">ADDRESS PROOF</label>
-								<input type="file" class="w3-input" name="address_proof" id="address_proof" />
-							</div>
-							<div class="w3-display-bottomright w3-xxlarge" style="display:none;"><i class="fa fa-circle-o-notch w3-spin"></i></div>
-						</div>
-						<div class="party_ledger w3-display-container">
-							<div>
-								<label for="party_ledger">PARTY LEDGER</label>
-								<input type="file" class="w3-input" name="party_ledger" id="party_ledger" />
-							</div>
-							<div class="w3-display-bottomright w3-xxlarge" style="display:none;"><i class="fa fa-circle-o-notch w3-spin"></i></div>
-						</div>
-						<div class="tally_account w3-display-container">
-							<div>
-								<label for="tally_account">TALLY ACCOUNT</label>
-								<input type="file" class="w3-input" name="tally_account" id="tally_account" />
-							</div>
-							<div class="w3-display-bottomright w3-xxlarge" style="display:none;"><i class="fa fa-circle-o-notch w3-spin"></i></div>
-						</div>
-						<div class="gst_return_copy w3-display-container">
-							<div>
-								<label for="gst_return_copy">GST RETURN COPY</label>
-								<input type="file" class="w3-input" name="gst_return_copy" id="gst_return_copy" />
-							</div>
-							<div class="w3-display-bottomright w3-xxlarge" style="display:none;"><i class="fa fa-circle-o-notch w3-spin"></i></div>
-						</div>
-						<div class="previous_year_audit_report w3-display-container">
-							<div>
-								<label for="previous_year_audit_report">PREVIOUS YEAR AUDIT REPORT</label>
-								<input type="file" class="w3-input" name="previous_year_audit_report" id="previous_year_audit_report" />
-							</div>
-							<div class="w3-display-bottomright w3-xxlarge" style="display:none;"><i class="fa fa-circle-o-notch w3-spin"></i></div>
-						</div>
-						<button class="w3-button w3-block w3-theme submit">Submit</button>
-					</div>
-				</div>
-			</div>
-			<div class="w3-col s12 m6 l4 w3-container w3-padding-16 old-work">
-				<ul class="w3-ul w3-card contents"></ul>
-				<div style="height: 150px; display: flex; justify-content: center; align-items: center;">
-					<button id="load-more-button" class="w3-button w3-circle w3-xlarge w3-theme-l2"><i class="fa fa-arrow-down"></i></button>
-				</div>
-			</div>
-			<div class="w3-col s12 m6 l4 w3-container w3-padding-16 work-detail" style="display: none;">
-				<div class="w3-card">
-					<div class="w3-container w3-padding-16 w3-theme-l3" style="box-shadow: 0 2px 5px 0 rgba(0,0,0,0.16);z-index: 1;position: relative;">
-						<div class="type w3-large"></div>
-						<div class="w3-small created-at"></div>
-					</div>
-					<div class="w3-container w3-padding-16 w3-theme-l4 w3-row">
-						<div class="assigned-to w3-col s6"></div>
-						<div class="status w3-col s6"></div>
-						<div class="updated-at w3-tiny w3-col s6"></div>
-						<div class="message w3-small w3-col s6"></div>
-					</div>
-					<ul class="w3-ul files"></ul>
-					<button class="w3-button w3-block w3-theme-l2 add-more-document">Add more document</button>
-				</div>
-				<div class="w3-modal" id="more-document-modal">
-					<div class="w3-modal-content w3-animate-zoom">
-						<div class="w3-padding">
-							<input type="text" class="w3-input" id="file-name" name="file-name" placeholder="File name" /><div class="w3-section"></div>
-							<input type="file" class="w3-input file-object" id="file" name="file" />
-						</div>
-						<div class="w3-row">
-							<div class="w3-col s6">
-								<button class="w3-button w3-block w3-theme-l5 close"><i class="fa fa-close"></i></button>
-							</div>
-							<div class="w3-col s6">
-								<button class="w3-button w3-block w3-theme done"><i class="fa fa-check"></i></button>
-							</div>
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
-	</div>
-
 	<!-- Ask page -->
 	<div class="page w3-animate-top" id="ask-expert">
 		<div class="w3-theme w3-card-4 w3-padding">
@@ -220,83 +79,102 @@
 		</div>
 		<div class="w3-row">
 			<div class="w3-col s12 m6 w3-container w3-padding-16">
-				<h3>Ask to expert</h3>
-				<div id="question"></div>
-				<input type="email" id="email" name="email" class="w3-input w3-border" placeholder="Email" required="" />
-				<div class="w3-section"></div>
-				<button class="submit w3-button w3-theme w3-border">Submit</button>
-			</div>
-			<div class="w3-col s12 m6 w3-container w3-padding-16">
-				<h3>Recent Question</h3>
-				<div id="recent-question"></div>
+				<h3>Your questions</h3>
+				<ul class="w3-ul w3-card w3-border" id="contents">
+					<li>Sorry no question for now. By the way you can ask question by clicking envelop button on the top of this screen</li>
+				</ul>
 				<div style="height: 150px; display: flex; justify-content: center; align-items: center;">
 					<button id="load-more-button" class="w3-button w3-circle w3-xlarge w3-theme-l2"><i class="fa fa-arrow-down"></i></button>
 				</div>
 			</div>
 		</div>
+		<div class="w3-modal" id="ask-modal">
+			<div class="w3-modal-content w3-animate-top">
+				<div id="question"></div>
+				<input type="email" class="w3-input w3-border" id="email" name="email" placeholder="Your email please" />
+				<div class="w3-row">
+					<div class="w3-col s6">
+						<button class="w3-button w3-block w3-theme-l3 close"><i class="fa fa-close"></i></button>
+					</div>
+					<div class="w3-col s6">
+						<button class="w3-button w3-block w3-theme done"><i class="fa fa-send"></i></button>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="w3-modal" id="answer-modal">
+			<div class="w3-modal-content w3-animate-top w3-card w3-theme-l3">
+				<div class="w3-container w3-padding-16">
+					<span class="w3-xlarge w3-right close" style="cursor: pointer;"><i class="fa fa-close"></i></span>
+					<div id="answer"></div>
+				</div>
+				<div class="w3-container w3-padding-16 w3-theme-l5">
+					<div class="w3-tiny answered-by"></div>
+					<div class="w3-tiny updated-at"></div>
+				</div>
+			</div>
+		</div>
+		<button class="w3-button w3-circle w3-theme-dark open-ask-modal" style="position:fixed; bottom: 15px; right: 15px; width: 70px; height: 70px;">
+			<i class="fa fa-plus fa-2x"></i>
+		</button>
 	</div>
-	
-	<!-- Auth page -->
-	<div class="page w3-animate-top" id="auth">
+	<!-- Work page -->
+	<div class="page w3-animate-right" id="work">
 		<div class="w3-theme w3-card-4 w3-padding">
-			<a class="w3-button w3-large" href="#">
-				<img src="assets/imgs/gst_main.svg" style="max-width: 44px; max-height: 38px;"/>
+			<button class="w3-button w3-large go-back"><i class="fa fa-arrow-left"></i></button>
+			<a href="/ca" class="w3-button w3-large">
+				<img src="/assets/imgs/gst_main.svg" style="max-width: 44px; max-height: 38px;"/>
 			</a>
+			<button class="w3-button w3-large w3-right refresh"><i class="fa fa-refresh"></i></button>
 		</div>
-		<div class="w3-container w3-padding-16">
-			<div class="w3-card">
-				<div class="w3-container w3-theme-l2 page"><h5>Login</h5></div>
-				<div class="w3-container w3-padding-16">
-					<form id="login">
-						<label for="email">Email</label>
-						<input type="email" id="email" name="email" class="w3-input" required="" />
-						<div class="w3-section"></div>
-						<label for="password">Password</label>
-						<input type="password" id="password" name="password" class="w3-input" required="" />
-						<div class="w3-section"></div>
-						<button class="w3-button w3-block w3-theme-l5">Submit</button>
-					</form>
+		<div class="w3-section"></div>
+		<div class="w3-row">
+			<div class="w3-col s12 m6 w3-container w3-padding-16">
+				<div class="w3-row w3-card">
+					<div class="day-panel">
+						<button class="w3-col s3 w3-button w3-block w3-theme-light" id="prev-day"><i class="fa fa-chevron-left"></i></button>
+						<button class="w3-col s6 w3-button w3-block w3-theme-l2" id="to-day"></button>
+						<button class="w3-col s3 w3-button w3-block w3-theme-light" id="next-day"><i class="fa fa-chevron-right"></i></button>
+					</div>
+					<div class="filter-panel">
+						<select class="w3-col s6 w3-select w3-border" id="by-status"></select>
+						<select class="w3-col s6 w3-select w3-border" id="by-user"></select>
+					</div>
+				</div>
+				<div class="w3-section"></div>
+				<ul id="contents" class="w3-ul w3-card"></ul>
+				<div class="w3-section"></div>
+				<div style="display: flex; justify-content: center; align-items: center;">
+					<button id="load-more-button" class="w3-button w3-circle w3-theme-l2 w3-xlarge"><i class="fa fa-arrow-down"></i></button>
 				</div>
 			</div>
-			<div class="w3-card">
-				<div class="w3-container w3-theme-l2 page"><h5>Register</h5></div>
-				<div class="w3-container w3-padding-16">
-					<form id="register">
-						<label for="name">Name</label>
-						<input type="text" id="name" name="name" class="w3-input" required="" />
-						<div class="w3-section"></div>
-						<label for="email">Email</label>
-						<input type="email" id="email" name="email" class="w3-input" required="" />
-						<div class="w3-section"></div>
-						<label for="password">Password</label>
-						<input type="password" id="password" name="password" class="w3-input" required="" />
-						<div class="w3-section"></div>
-						<button class="w3-button w3-block w3-theme-l5">Submit</button>
-					</form>
-				</div>
-			</div>
-			<div class="w3-card">
-				<div class="w3-container w3-theme-l2 page"><h5>Reset Password</h5></div>
-				<div class="w3-container w3-padding-16">
-					<form id="reset-password">
-						<label for="email">Email</label>
-						<input type="email" id="email" name="email" class="w3-input" required="" />
-						<div class="w3-section"></div>
-						<button class="w3-button w3-block w3-theme-l5">Submit</button>
-					</form>
-				</div>
-			</div>
-			<div class="w3-section"></div>
-			<div id="message" class="w3-container w3-padding-16 w3-theme-l3" style="display;none;"></div>
-			<div class="w3-section"></div>
 		</div>
-	</div>
-
-	<!-- Spinner -->
-	<div class="w3-top" id="spin" style="z-index: 10; display: none; width: 100%; height: 100%; background-color: rgba( 0, 0, 0, 1 );">
-		<div id="spin-message" class="w3-top w3-theme w3-container w3-padding-16 w3-center">Loading...</div>
-		<div class="spinner" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">
-			<img src="assets/imgs/loader.svg" alt="loader" style="width: 120px; height: 120px;" class="w3-spin" />
+		<div class="w3-modal" id="work-modal">
+			<div class="w3-modal-content w3-animate-zoom">
+				<div class="w3-card w3-row">
+					<div class="w3-col s12 m6">
+						<div class="w3-container w3-padding-16 w3-theme-l3" style="box-shadow: 0 2px 5px 0 rgba(0,0,0,0.16);z-index: 1;position: relative;">
+							<span class="w3-right w3-xlarge close" style="cursor: pointer;"><i class="fa fa-close"></i></span>
+							<div class="type w3-large"></div>
+							<div class="w3-small user"></div>
+							<div class="w3-tiny created-at"></div>
+						</div>
+						<div class="w3-container w3-padding-16 w3-theme-l4">
+							<form id="status-change-form">
+								<input type="text" class="w3-input w3-border w3-small" name="status" id="status" /><div class="w3-section"></div>
+								<input type="text" class="w3-input w3-border w3-small" name="message" id="message" /><div class="w3-section"></div>
+								<button class="w3-button w3-block w3-theme-l2"><i class="fa fa-check"></i></button>
+							</form>
+							<div class="w3-section"></div>
+							<div class="updated-at w3-tiny w3-col s6"></div>
+						</div>
+					</div>
+					<div class="w3-col s12 m6">
+						<ul class="w3-ul files"></ul>
+					</div>
+					
+				</div>
+			</div>
 		</div>
 	</div>
 	
