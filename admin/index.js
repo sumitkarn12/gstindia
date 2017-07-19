@@ -2,7 +2,6 @@
 
 Parse.initialize("gZcENVmcvqfSSeiIomLKUxH8lLkWhhfPOy7Hml6N", "Oqk4oWh3lpBY7W5ewRGGB4REw4zflX3xzgATxXpk");
 Parse.serverURL = 'https://parseapi.back4app.com/';
-Parse.Config.get().then( console.log );
 
 var app = null, _index = null, _questionpage = null, _capage = null, _workpage = null;
 
@@ -859,6 +858,27 @@ const Routes = Backbone.Router.extend({
 	}
 });
 app = new Routes();
-Backbone.history.start();
+
+$( document ).ready(()=>{
+	$(".page").hide();
+	var el = $(`<div style="height: 100vh; width: 100%; display: flex; justify-content: center; align-items:center;"><i class="fa fa-circle-o-notch fa-4x w3-spin"></i></div>`);
+	$("body").append( el );
+	if ( Parse.User.current() ) {
+		Parse.Config.get().then( config => {
+			if( config.get( "ADMIN" ) == Parse.User.current().id ) {
+				el.remove();
+				Backbone.history.start();
+			} else {
+				el.find("i").remove();
+				el.html( "<h3 class='w3-center w3-container w3-padding-16'>Looks like you are not an ADMIN. Please contact <a href='mailto:sumitkarn12@gmail.com'>WEB DEVELOPER</a></h3>" );
+			}
+		}).catch( err => {
+			toastr.error( err.message, err.code );
+			location.href="/auth";
+		});
+	} else {
+		location.href="/auth";
+	}
+});
 
 
