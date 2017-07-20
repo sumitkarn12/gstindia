@@ -23,17 +23,16 @@
 </head>
 
 <!--CA Control Panel-->
-
 <body>
 	
 	<!-- Index Page -->
 	<div class="w3-animate-right page" id="index">
-		<div class="w3-theme w3-card-4 w3-padding">
-			<a class="w3-button w3-large" href="/ca">
-				<img src="/assets/imgs/gst_main.svg" style="max-width: 44px; max-height: 38px;"/>
-			</a>
+		<div class="w3-theme w3-card-4 w3-top">
+			<button class="w3-button w3-xxlarge">
+				<img src="/assets/imgs/gst_main.svg" style="height: 36px;"/>
+			</button>
 			<div class="w3-dropdown-click w3-right">
-				<button class="w3-button w3-large user w3-circle"><i class="fa fa-user"></i></button>
+				<button class="w3-button w3-xxlarge user w3-circle"><i class="fa fa-user"></i></button>
 				<div id="user-detail" class="w3-dropdown-content w3-bar-block w3-border" style="z-index:10;right: 0;">
 					<div class="w3-bar-item w3-border-bottom">
 						<div class="name">Name</div>
@@ -44,42 +43,47 @@
 				</div>
 			</div>
 		</div>
+		<div style="height:70px;"></div>
 		<div class="w3-row">
+			<div class="w3-col s3 w3-hide-small"><p></p></div>
 			<div class="w3-col s12 m6 w3-container w3-padding-16">
-				<div class="banner w3-display-container">
-					<div class="w3-center">
-						<img class="w3-image" src="https://source.unsplash.com/BLF5vzY6d7s/640x380" style="width:100%" />
+				<div class="w3-card">
+					<div class="banner w3-display-container">
+						<div class="w3-center">
+							<img class="w3-image" src="https://source.unsplash.com/BLF5vzY6d7s/640x380" style="width:100%" />
+						</div>
+						<div class="w3-display-bottommiddle">
+							<a style="background-color:black;color:white;text-decoration:none;padding:4px 6px;font-family:-apple-system, BlinkMacSystemFont, &quot;San Francisco&quot;, &quot;Helvetica Neue&quot;, Helvetica, Ubuntu, Roboto, Noto, &quot;Segoe UI&quot;, Arial, sans-serif;font-size:12px;font-weight:bold;line-height:1.2;display:inline-block;border-radius:3px;" href="http://unsplash.com/@kacibaum?utm_medium=referral&amp;utm_campaign=photographer-credit&amp;utm_content=creditBadge" target="_blank" rel="noopener noreferrer" title="Download free do whatever you want high-resolution photos from Kaci Baum"><span style="display:inline-block;padding:2px 3px;"><svg xmlns="http://www.w3.org/2000/svg" style="height:12px;width:auto;position:relative;vertical-align:middle;top:-1px;fill:white;" viewBox="0 0 32 32"><title></title><path d="M20.8 18.1c0 2.7-2.2 4.8-4.8 4.8s-4.8-2.1-4.8-4.8c0-2.7 2.2-4.8 4.8-4.8 2.7.1 4.8 2.2 4.8 4.8zm11.2-7.4v14.9c0 2.3-1.9 4.3-4.3 4.3h-23.4c-2.4 0-4.3-1.9-4.3-4.3v-15c0-2.3 1.9-4.3 4.3-4.3h3.7l.8-2.3c.4-1.1 1.7-2 2.9-2h8.6c1.2 0 2.5.9 2.9 2l.8 2.4h3.7c2.4 0 4.3 1.9 4.3 4.3zm-8.6 7.5c0-4.1-3.3-7.5-7.5-7.5-4.1 0-7.5 3.4-7.5 7.5s3.3 7.5 7.5 7.5c4.2-.1 7.5-3.4 7.5-7.5z"></path></svg></span><span style="display:inline-block;padding:2px 3px;">Kaci Baum</span></a>
+						</div>
+						<div class="w3-display-left">
+							<button class="w3-button"><i class="fa fa-arrow-left"></i></button>
+						</div>
+						<div class="w3-display-right">
+							<button class="w3-button"><i class="fa fa-arrow-right"></i></button>
+						</div>
 					</div>
-					<div class="w3-display-bottommiddle">
-						<a style="background-color:black;color:white;text-decoration:none;padding:4px 6px;font-family:-apple-system, BlinkMacSystemFont, &quot;San Francisco&quot;, &quot;Helvetica Neue&quot;, Helvetica, Ubuntu, Roboto, Noto, &quot;Segoe UI&quot;, Arial, sans-serif;font-size:12px;font-weight:bold;line-height:1.2;display:inline-block;border-radius:3px;" href="http://unsplash.com/@kacibaum?utm_medium=referral&amp;utm_campaign=photographer-credit&amp;utm_content=creditBadge" target="_blank" rel="noopener noreferrer" title="Download free do whatever you want high-resolution photos from Kaci Baum"><span style="display:inline-block;padding:2px 3px;"><svg xmlns="http://www.w3.org/2000/svg" style="height:12px;width:auto;position:relative;vertical-align:middle;top:-1px;fill:white;" viewBox="0 0 32 32"><title></title><path d="M20.8 18.1c0 2.7-2.2 4.8-4.8 4.8s-4.8-2.1-4.8-4.8c0-2.7 2.2-4.8 4.8-4.8 2.7.1 4.8 2.2 4.8 4.8zm11.2-7.4v14.9c0 2.3-1.9 4.3-4.3 4.3h-23.4c-2.4 0-4.3-1.9-4.3-4.3v-15c0-2.3 1.9-4.3 4.3-4.3h3.7l.8-2.3c.4-1.1 1.7-2 2.9-2h8.6c1.2 0 2.5.9 2.9 2l.8 2.4h3.7c2.4 0 4.3 1.9 4.3 4.3zm-8.6 7.5c0-4.1-3.3-7.5-7.5-7.5-4.1 0-7.5 3.4-7.5 7.5s3.3 7.5 7.5 7.5c4.2-.1 7.5-3.4 7.5-7.5z"></path></svg></span><span style="display:inline-block;padding:2px 3px;">Kaci Baum</span></a>
-					</div>
-					<div class="w3-display-left">
-						<button class="w3-button"><i class="fa fa-arrow-left"></i></button>
-					</div>
-					<div class="w3-display-right">
-						<button class="w3-button"><i class="fa fa-arrow-right"></i></button>
+					<div class="w3-bar-item">
+						<a href="#question" class="w3-button w3-xlarge w3-block w3-bar-item">Question</a>
+						<a href="#work" class="w3-button w3-xlarge w3-block w3-bar-item">Work</a>
 					</div>
 				</div>
 			</div>
-			<div class="w3-col s12 m6 w3-container w3-padding-16">
-				<a href="#question" class="w3-button w3-xlarge w3-theme-l2 w3-block">Question</a>
-				<div class="w3-section"></div>
-				<a href="#work" class="w3-button w3-xlarge w3-theme-l2 w3-block">Work</a>
-			</div>
+			<div class="w3-col s3 w3-hide-small"><p></p></div>
 		</div>
 	</div>
 	<!-- Question page -->
 	<div class="page w3-animate-right" id="question">
-		<div class="w3-theme w3-card-4 w3-padding">
-			<button class="w3-button w3-large go-back"><i class="fa fa-arrow-left"></i></button>
-			<a href="/ca" class="w3-button w3-large">
-				<img src="/assets/imgs/gst_main.svg" style="max-width: 44px; max-height: 38px;"/>
+		<div class="w3-theme w3-card-4 w3-top">
+			<button class="w3-button w3-xxlarge go-back"><i class="fa fa-arrow-left"></i></button>
+			<a href="#" class="w3-button w3-xxlarge">
+				<img src="/assets/imgs/gst_main.svg" style="height: 36px;"/>
 			</a>
-			<button class="w3-button w3-large w3-right refresh"><i class="fa fa-refresh"></i></button>
-			<button class="w3-button w3-large w3-right count"></button>
+			<button class="w3-button w3-xxlarge w3-right refresh"><i class="fa fa-refresh"></i></button>
+			<button class="w3-button w3-xxlarge w3-right count"></button>
 		</div>
-		<div class="w3-section"></div>
+		<div style="height:70px;"></div>
 		<div class="w3-row">
+			<div class="w3-col s3 w3-hide-small"><p></p></div>
 			<div class="w3-col s12 m6 w3-container w3-padding-16">
 				<div class="w3-row w3-card">
 					<div class="day-panel">
@@ -103,6 +107,7 @@
 					<button id="load-more-button" class="w3-button w3-circle w3-theme-l2 w3-xlarge"><i class="fa fa-arrow-down"></i></button>
 				</div>
 			</div>
+			<div class="w3-col s3 w3-hide-small"><p></p></div>
 		</div>
 		<div class="w3-modal" id="answer-modal">
 			<div class="w3-modal-content w3-animate-zoom">
@@ -135,16 +140,17 @@
 	</div>
 	<!-- Work page -->
 	<div class="page w3-animate-right" id="work">
-		<div class="w3-theme w3-card-4 w3-padding">
-			<button class="w3-button w3-large go-back"><i class="fa fa-arrow-left"></i></button>
-			<a href="/ca" class="w3-button w3-large">
-				<img src="/assets/imgs/gst_main.svg" style="max-width: 44px; max-height: 38px;"/>
+		<div class="w3-theme w3-card-4 w3-top">
+			<button class="w3-button w3-xxlarge go-back"><i class="fa fa-arrow-left"></i></button>
+			<a href="/ca" class="w3-button w3-xxlarge">
+				<img src="/assets/imgs/gst_main.svg" style="height: 36px;"/>
 			</a>
-			<button class="w3-button w3-large w3-right refresh"><i class="fa fa-refresh"></i></button>
-			<button class="w3-button w3-large w3-right count"></button>
+			<button class="w3-button w3-xxlarge w3-right refresh"><i class="fa fa-refresh"></i></button>
+			<button class="w3-button w3-xxlarge w3-right count"></button>
 		</div>
-		<div class="w3-section"></div>
+		<div style="height: 70px;"></div>
 		<div class="w3-row">
+			<div class="w3-col s3 w3-hide-small"><p></p></div>
 			<div class="w3-col s12 m6 w3-container w3-padding-16">
 				<div class="w3-row w3-card">
 					<div class="day-panel">
@@ -163,6 +169,7 @@
 					<button id="load-more-button" class="w3-button w3-circle w3-theme-l2 w3-xlarge"><i class="fa fa-arrow-down"></i></button>
 				</div>
 			</div>
+			<div class="w3-col s3 w3-hide-small"><p></p></div>
 		</div>
 		<div class="w3-modal" id="work-modal">
 			<div class="w3-modal-content w3-animate-zoom">

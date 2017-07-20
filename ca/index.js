@@ -137,7 +137,8 @@ const QuestionPage = Backbone.View.extend({
 				['formatting',"bold", "italic"],
 				['link', 'insertImage', 'orderedList'],
 				['fullscreen']
-			]
+			],
+			svgPath: '/assets/trumbowyg/dist/ui/icons.svg'
 		});
 		this.tbw.on( "tbwchange", (ev)=>{
 			ev.preventDefault();

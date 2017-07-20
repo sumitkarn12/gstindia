@@ -567,16 +567,8 @@ const WorkPage = Backbone.View.extend({
 		modal.find(".type").html( this.model.get("type") );
 		modal.find(".created-at").html( this.model.get("createdAt").toLocaleString() );
 		modal.find(".updated-at").html( this.model.get("updatedAt").toLocaleString() );
-		modal.find(".status").html( this.model.get("status") );
-		modal.find(".message").html( this.model.get("message") );
-		if( this.model.has( "assignedTo" ) ) {
-			this.getUser( this.model.get("assignedTo").id ).then(r=>{
-				modal.find(".assigned-to").html( r.get("name") );
-				modal.find(".assigned-to").data( "workid", id );
-			});
-		} else {
-			modal.find(".assigned-to").html( "Assign CA" )
-		}
+		if( this.model.has("message") ) modal.find(".message").html( this.model.get("message") );
+		else modal.find(".message").html( "No comment" );
 		this.getUser( this.model.get("user").id ).then(r=> modal.find(".user").html( r.get("name") ) );
 		var template = `<li class="w3-display-container"><div><div class="name"><%= name %></div><div class="w3-tiny added-at"><%= addedAt %></div></div><div class="w3-display-right"><a download="<%=downloadAs%>" target="_blank" href="<%= url %>" class="w3-button w3-theme-l5"><i class="fa fa-download"></i></a></div></li>`;
 		modal.find(".files").empty();
@@ -585,8 +577,8 @@ const WorkPage = Backbone.View.extend({
 		downloadAs += "-"+this.model.get("type").replace(/[\W_]/g, "");
 		$.each( this.model.get("files"), (i, fl)=>{
 			var ext = fl.file.url().substring( fl.file.url().lastIndexOf(".") );
-			ext = downloadAs+"-"+fl.name.replace(/[\W_]/g, "")+ext;
-			var li = template({ downloadAs: ext, name: fl.name, url: fl.file.url(), addedAt: fl.addedAt.toLocaleString()});
+			ext = downloadAs+"-"+fl.type.replace(/[\W_]/g, "")+ext;
+			var li = template({ downloadAs: ext, name: fl.type, url: fl.file.url(), addedAt: fl.addedAt.toLocaleString()});
 			modal.find(".files").append(li);
 		});
 		modal.show();

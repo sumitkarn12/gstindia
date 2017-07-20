@@ -25,6 +25,48 @@ $.fn.serializeObject = function() {
 	$.each($.map(this.serializeArray(), elementMapper), appendToResult);
 	return o;
 };
+$.fn.nox = function( settings ) {
+	var panels = [];
+	var current = 0;
+	var base = this;
+	var timeout = null;
+	var defaults = {
+		infoOn: base.find(".info"),
+		delay: 3000
+	};
+	$.extend( defaults, settings );
+	var indexen = function( i, el ) {
+		el = $( el );
+		panels[ parseInt( el.data("index") ) ] = el;
+	};
+	this.show = function( idx ) {
+		if( idx == panels.length ) idx = 0;
+		if( idx < 0 ) idx = panels.length - 1;
+		hideAll();
+		panels[ idx ].show();
+		defaults.infoOn.html( panels[idx].data("message") );
+		defaults.countOn.html( (idx+1)+"/"+panels.length );
+		current = idx;
+		clearTimeout( timeout );
+		timeout = setTimeout(function() { base.next(); }, defaults.delay);
+		return this;
+	};
+	this.next = function() {
+		this.show( ++current );
+		return this;
+	};
+	this.prev = function() {
+		this.show( --current );
+		return this;
+	};
+	var hideAll = function() {
+		base.find(".nox-panel").hide();
+	};
+	this.find(".nox-panel").each( indexen );
+	this.show( 0 );
+	return this;
+};
+
 const UserManagement = Backbone.View.extend({
 	initialize: function() {
 		this.users = new Map();
@@ -77,6 +119,22 @@ const IndexPage = Backbone.View.extend({
 			$e.find(".name").html( user.get("name") );
 			$e.find(".email").html( user.get("email") );
 		}
+		var nox_panel_temp = `<a href="<%=redirectTo%>" data-message="<%=info%>" data-index="<%=index%>" class="nox-panel w3-animate-opacity"><img class="w3-image" src="<%= imageUrl %>" style="width:100%" /></a>`;
+		nox_panel_temp = _.template( nox_panel_temp );
+		var nox = this.$el.find("#nox").empty();
+		Parse.Config.get().then(conf=>{
+			var sliders = JSON.parse(conf.get( "user_slider" ));
+			$.each( sliders, ( i, e )=>{
+				el = nox.append( nox_panel_temp( e ) );
+			});
+			this.nox = nox.nox({
+				infoOn: nox.parent().find(".info"),
+				delay: 6000,
+				countOn: nox.parent().find(".count")
+			});
+		}).catch( er=> {
+			toastr.error(er.message, er.code);
+		});
 		return this;
 	},
 	render: function() {
@@ -85,7 +143,17 @@ const IndexPage = Backbone.View.extend({
 		return this;
 	},
 	events: {
-		"click .user": "userAction"
+		"click .user": "userAction",
+		"click .next-nox": "nextImage",
+		"click .prev-nox": "prevImage"
+	},
+	prevImage: function( ev ) {
+		ev.preventDefault();
+		this.nox.prev();
+	},
+	nextImage: function( ev ) {
+		ev.preventDefault();
+		this.nox.next();
 	},
 	userAction: function( ev ) {
 		ev.preventDefault();
@@ -157,6 +225,10 @@ const AskExpertPage = Backbone.View.extend({
 			li.find(".updated-at").html( json.updatedAt );
 		}
 	},
+	blankFiller: function() {
+		var temp = `<li>No question for now. You can ask question by click + button</li>`;
+		this.$el.find("#contents").append( temp );
+	},
 	events: {
 		"click .go-back": "goBack",
 		"click #load-more-button": "load_more",
@@ -202,7 +274,7 @@ const AskExpertPage = Backbone.View.extend({
 	refresh: function( ev ) {
 		ev.preventDefault();
 		this.skip = 0;
-		this.$el.find("#recent-question").empty();
+		this.$el.find("#contents").empty();
 		this.$el.find("#load-more-button").click();
 	},
 	openAnswerModal: function( ev ) {
@@ -243,6 +315,7 @@ const AskExpertPage = Backbone.View.extend({
 			$.each( res, ( i, e ) => {
 				self.renderList( e );
 			});
+			if( res.length == 0 && this.skip == 0 ) this.blankFiller();
 			if( res.length == 0 )
 				self.$el.find("#load-more-button").hide();
 			else
@@ -442,7 +515,6 @@ const WorkPage = Backbone.View.extend({
 		filterObject.updatedAt = byDay;
 		var arr = this.table.where( filterObject );
 		this.$el.find("#contents").empty();
-		console.log( arr, filterObject );
 		$.each( arr, ( i, o ) => {
 			this.renderList( this.collection.get( o.id ) );
 		});
@@ -488,16 +560,10 @@ const WorkPage = Backbone.View.extend({
 		modal.find(".type").html( this.model.get("type") );
 		modal.find(".created-at").html( this.model.get("createdAt").toLocaleString() );
 		modal.find(".updated-at").html( this.model.get("updatedAt").toLocaleString() );
-		modal.find(".status").html( this.model.get("status") );
-		modal.find(".message").html( this.model.get("message") );
-		if( this.model.has( "assignedTo" ) ) {
-			this.getUser( this.model.get("assignedTo").id ).then(r=>{
-				modal.find(".assigned-to").html( r.get("name") );
-				modal.find(".assigned-to").data( "workid", id );
-			});
-		} else {
-			modal.find(".assigned-to").html( "Assign CA" )
-		}
+		if( this.model.has( "message" ) )
+			modal.find(".message").html( this.model.get("message") );
+		else
+			modal.find(".message").html("No comment");
 		this.getUser( this.model.get("user").id ).then(r=> modal.find(".user").html( r.get("name") ) );
 		var template = `<li class="w3-display-container"><div><div class="name"><%= name %></div><div class="w3-tiny added-at"><%= addedAt %></div></div><div class="w3-display-right"><a download="<%=downloadAs%>" target="_blank" href="<%= url %>" class="w3-button w3-theme-l5"><i class="fa fa-download"></i></a></div></li>`;
 		modal.find(".files").empty();
@@ -506,8 +572,8 @@ const WorkPage = Backbone.View.extend({
 		downloadAs += "-"+this.model.get("type").replace(/[\W_]/g, "");
 		$.each( this.model.get("files"), (i, fl)=>{
 			var ext = fl.file.url().substring( fl.file.url().lastIndexOf(".") );
-			ext = downloadAs+"-"+fl.name.replace(/[\W_]/g, "")+ext;
-			var li = template({ downloadAs: ext, name: fl.name, url: fl.file.url(), addedAt: fl.addedAt.toLocaleString()});
+			ext = downloadAs+"-"+fl.type.replace(/[\W_]/g, "")+ext;
+			var li = template({ downloadAs: ext, name: fl.type, url: fl.file.url(), addedAt: fl.addedAt.toLocaleString()});
 			modal.find(".files").append(li);
 		});
 		modal.show();

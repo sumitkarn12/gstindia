@@ -25,7 +25,7 @@ $.fn.serializeObject = function() {
 };
 
 const Waiter = Backbone.View.extend({
-	template: `<div style="display:none;"><div style="display:flex; justify-content:center; align-items:center; height: 150px; font-size: 48px;"><i class="fa fa-circle-o-notch w3-spin"></i></div></div>`,
+	template: `<div style="display:none;"><div class="w3-xxxlarge" style="display:flex; justify-content:center; align-items:center;"><i class="fa fa-circle-o-notch w3-spin"></i></div></div>`,
 	initialize: function() {
 		this.$el = $( this.template );
 		return this;
@@ -38,7 +38,6 @@ const Waiter = Backbone.View.extend({
 		this.$el.hide();
 		return this;
 	}
-
 });
 
 var app = null, _auth = null, _profile = null;
@@ -125,10 +124,11 @@ const ProfilePage = Backbone.View.extend({
 	el: "#profile",
 	waiter: new Waiter,
 	initialize: function() {
-		this.$el.prepend( this.waiter.$el );
+		this.$el.find("form button").append( this.waiter.$el );
 		var user = Parse.User.current();
 		this.$el.find("#name").val( user.get("name") );
 		this.$el.find("#email").val( user.get("email") );
+		this.$el.find("#mobile").val( user.get("mobile") );
 		return this;
 	},
 	render: function() {
@@ -145,6 +145,7 @@ const ProfilePage = Backbone.View.extend({
 		var form = $( ev.currentTarget ).serializeObject();
 		var user = Parse.User.current();
 		user.set("name", form.name );
+		user.set("mobile", form.mobile );
 		this.waiter.render();
 		user.save(null, {
 			success: function(user) {
