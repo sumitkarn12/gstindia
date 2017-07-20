@@ -26,7 +26,6 @@
 
 <body>
 	
-	
 	<!-- Index Page -->
 	<div class="w3-animate-right page" id="index">
 		<div class="w3-theme w3-card-4 w3-padding">
@@ -77,6 +76,7 @@
 				<img src="/assets/imgs/gst_main.svg" style="max-width: 44px; max-height: 38px;"/>
 			</a>
 			<button class="w3-button w3-large w3-right refresh"><i class="fa fa-refresh"></i></button>
+			<button class="w3-button w3-large w3-right count"></button>
 		</div>
 		<div class="w3-section"></div>
 		<div class="w3-row">
@@ -89,7 +89,7 @@
 					</div>
 					<div class="filter-panel">
 						<select class="w3-col s6 w3-select w3-border" id="by-answer">
-							<option value="all">All</option>
+							<option value="">All</option>
 							<option value="not-answered">Not Answered</option>
 							<option value="answered">Answered</option>
 						</select>
@@ -141,6 +141,7 @@
 				<img src="/assets/imgs/gst_main.svg" style="max-width: 44px; max-height: 38px;"/>
 			</a>
 			<button class="w3-button w3-large w3-right refresh"><i class="fa fa-refresh"></i></button>
+			<button class="w3-button w3-large w3-right count"></button>
 		</div>
 		<div class="w3-section"></div>
 		<div class="w3-row">
@@ -152,8 +153,7 @@
 						<button class="w3-col s3 w3-button w3-block w3-theme-light" id="next-day"><i class="fa fa-chevron-right"></i></button>
 					</div>
 					<div class="filter-panel">
-						<select class="w3-col s6 w3-select w3-border" id="by-status"></select>
-						<select class="w3-col s6 w3-select w3-border" id="by-user"></select>
+						<select class="w3-col s12 w3-select w3-border" id="by-user"></select>
 					</div>
 				</div>
 				<div class="w3-section"></div>
@@ -175,13 +175,8 @@
 							<div class="w3-tiny created-at"></div>
 						</div>
 						<div class="w3-container w3-padding-16 w3-theme-l4">
-							<form id="status-change-form">
-								<input type="text" class="w3-input w3-border w3-small" name="status" id="status" /><div class="w3-section"></div>
-								<input type="text" class="w3-input w3-border w3-small" name="message" id="message" /><div class="w3-section"></div>
-								<button class="w3-button w3-block w3-theme-l2"><i class="fa fa-check"></i></button>
-							</form>
-							<div class="w3-section"></div>
-							<div class="updated-at w3-tiny w3-col s6"></div>
+							<div class="message w3-tiny"></div>
+							<div class="updated-at w3-small"></div>
 						</div>
 					</div>
 					<div class="w3-col s12 m6">

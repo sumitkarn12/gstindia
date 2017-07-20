@@ -48,6 +48,11 @@ const UserManagement = Backbone.View.extend({
 		});
 	}
 });
+const Collection = Backbone.Collection.extend({
+	model: Backbone.Model.extend({
+		idAttribute: "objectId"
+	})
+});
 const Option = Backbone.Collection.extend({
 	initialize: function( attribute, el ) {
 		el.append( "<option value=''>All</option>" );
@@ -77,6 +82,7 @@ const Waiter = Backbone.View.extend({
 		return this;
 	}
 });
+
 const IndexPage = Backbone.View.extend({
 	el: "#index",
 	initialize: function() {
@@ -118,6 +124,7 @@ const QuestionPage = Backbone.View.extend({
 		this.skip = 0;
 		this.limit = 100;
 		this.collection = new Map();
+		this.table = new Collection();
 		this.waiter = new Waiter();
 		this.day = new Date(new Date().toDateString());
 		this.$el.find("#to-day").html( this.day.toDateString() );
@@ -155,18 +162,30 @@ const QuestionPage = Backbone.View.extend({
 		this.$el.show();
 		return this;
 	},
+	remember: function( object ) {
+		var acl = object.getACL();
+		if( !acl || acl.getPublicWriteAccess() || acl.getWriteAccess( Parse.User.current() ) ) {
+			this.collection.set( object.id, object );
+			var json = object.toJSON();
+			json.answered = object.has( "answer" );
+			json.user_email = $.trim(object.get( "user_email" ));
+			json.createdAt = new Date( json.createdAt ).toDateString();
+			json.updatedAt = new Date( json.updatedAt ).toDateString();
+			this.table.add( json );
+		}
+		return this;
+	},
 	renderList: function( object ) {
-		this.collection.set( object.id, object );
 		var ul = this.$el.find("#contents");
 		var li = ul.find("#li-"+object.id);
 		var json = object.toJSON();
 		json.answered = object.has("answer");
 		json.updatedAt = object.get("updatedAt").toLocaleString();
 		if( li.length == 0 ) {
-			json.user_email = object.get("user_email").replace(/\W+/g,"");
+			json.user_email = object.get("user_email");
 			this.userSet.add({
-				id: object.get("user_email").replace(/\W+/g,""),
-				user_email: object.get("user_email")
+				id: $.trim(object.get("user_email")),
+				user_email: $.trim(object.get("user_email"))
 			});
 			try {
 				var card = $(this.template( json ));
@@ -211,43 +230,47 @@ const QuestionPage = Backbone.View.extend({
 	changeDay: function( day ) {
 		this.day = day;
 		this.$el.find("#to-day").html( this.day.toDateString() );
-		this.skip = 0;
-		this.$el.find("#contents").empty();
-		this.userSet.reset();
-		this.$el.find("#load-more-button").click();
+		this.applyFilter();
 	},
 	applyFilter: function( ev ) {
 		try {ev.preventDefault();}catch(e){}
-		this.$el.find(".question-list" ).hide();
-		var classList = "";
-		if( this.$el.find("#by-answer").val() == "answered" )
-			classList += ".true";
-		else if( this.$el.find("#by-answer").val() == "not-answered" )
-			classList += ".false";
-		classList += "."+this.$el.find("#by-user").val();
-		classList = classList.replace( /\./g, " " ).replace(/ {2,}/g, " ").trim().replace( / /g, "." );
-		if( classList.length > 0 )
-			classList = "."+classList;
-		this.$el.find(".question-list"+classList ).show();
+		var byAnswer = this.$el.find("#by-answer").val().trim();
+		var byUser = this.$el.find("#by-user").val().trim();
+		var byDay = this.day.toDateString().trim();
+		var filterObject = {};
+		if( byAnswer != "" ) filterObject.answered = ( byAnswer == "answered" );
+		if( byUser != "" ) filterObject.user_email = byUser;
+		filterObject.updatedAt = byDay;
+		var arr = this.table.where( filterObject );
+		this.userSet.reset();
+		this.$el.find("#contents").empty();
+		$.each( arr, ( i, o ) => {
+			this.renderList( this.collection.get( o.id ) );
+		});
+		this.$el.find(".count").text( arr.length );
+		setTimeout(()=>{
+			this.$el.find("#by-user").val( byUser );
+		}, 100);
 	},
 	refresh: function( ev ) {
 		ev.preventDefault();
-		this.changeDay( this.day );
+		this.skip = 0;
+		this.table.reset();
+		this.collection.clear();
+		this.$el.find("#load-more-button").click();
 	},
 	load_more: function( ev ) {
 		ev.preventDefault();
+		$(window).scrollTop(0);
 		var self = this;
 		this.waiter.render();
 		var q = new Parse.Query( this.model );
-		q.greaterThanOrEqualTo( "createdAt", this.day );
-		q.lessThan( "createdAt", new Date( this.day.getTime() + 24*60*60*1000 ) );
 		q.limit( this.limit );
-		q.equalTo( "assignedTo", Parse.User.current() );
 		q.skip( this.skip );
 		q.descending( "updatedAt" );
 		q.find().then(res=>{
 			$.each( res, ( i, e ) => {
-				try {self.renderList( e );} catch(e){console.log(e);}
+				self.remember( e );
 			});
 			if( res.length == 0 )
 				self.$el.find("#load-more-button").hide();
@@ -312,26 +335,25 @@ const QuestionPage = Backbone.View.extend({
 const WorkPage = Backbone.View.extend({
 	el: "#work",
 	skip: 0,
-	limit: 20,
+	limit: 100,
 	collection: new Map(),
 	waiter: new Waiter(),
 	template: `
-		<li id="li-<%= objectId %>" data-status="<%= status %>" data-id="<%= objectId %>" class="work-list <%=status%> <%=assignedTo%> <%=user%>" style="cursor: pointer;">
+		<li id="li-<%= objectId %>" data-status="<%= status %>" data-id="<%= objectId %>" class="work-list <%=status%>" style="cursor: pointer;">
 			<div><%= type %></div>
 			<div class="w3-small">
 				<span class="user"></span>
 			</div>
 			<div class="w3-tiny updated-at"><%= updatedAt %></div>
-			<div class="w3-small status"><%= status %></div>
-			<div class="w3-tiny message"><%= message %></div>
+			<div class="w3-tiny message"></div>
 		</li>`,
 	model: Parse.Object.extend("cawork"),
 	initialize: function() {
 		this.day = new Date( new Date().toDateString() );
 		this.$el.prepend( this.waiter.$el );
 		this.template = _.template( this.template );
-		this.byStatus = new Option( "name", this.$el.find("#by-status") );
-		this.byUser = new Option( "name", this.$el.find("#by-user") );
+		this.userSet = new Option( "name", this.$el.find("#by-user") );
+		this.table = new Collection();
 		this.$el.find("#to-day").html( this.day.toDateString() );
 		this.$el.find("#load-more-button").click();
 		return this;
@@ -341,10 +363,18 @@ const WorkPage = Backbone.View.extend({
 		this.$el.show();
 		return this;
 	},
+	remember: function( object ) {
+		this.collection.set( object.id, object );
+		var json = object.toJSON();
+		json.user = object.get("user").id;
+		json.createdAt = new Date( json.createdAt ).toDateString();
+		json.updatedAt = new Date( json.updatedAt ).toDateString();
+		this.table.add( json, { merge:true });
+		return this;
+	},
 	renderList: function( object ) {
 		var ul = this.$el.find( "#contents" );
 		var li = ul.find("#li-"+object.id);
-		this.collection.set( object.id, object );
 		var json = object.toJSON();
 		json.updatedAt = object.get("updatedAt").toLocaleString();
 		json.type = json.type.replace(/[\W_]/g, " ").toUpperCase();
@@ -353,17 +383,10 @@ const WorkPage = Backbone.View.extend({
 				var card = $(this.template( json ));
 				this.getUser(object.get("user").id).then(r=>{
 					card.find(".user").html( r.get("name") );
-					card.addClass( object.get("user").id );
-					this.byUser.add({
+					this.userSet.add({
 						id: r.id,
 						name: r.get("name")
 					});
-				});
-				card.find(".status").html( object.get("status").toUpperCase() );
-				card.addClass( object.get("status") );
-				this.byStatus.add({
-					id: object.get("status"),
-					name: object.get("status").toUpperCase()
 				});
 				ul.append( card );
 			} catch(e){
@@ -371,11 +394,6 @@ const WorkPage = Backbone.View.extend({
 			}
 		} else {
 			li.find(".updated-at").html(json.updatedAt);
-			li.find(".status").html(json.status);
-			li.find(".message").html(json.message);
-			var prevStatus = li.data( "status" );
-			li.removeClass( prevStatus );
-			li.addClass( json.status );
 		}
 	},
 	events: {
@@ -408,46 +426,47 @@ const WorkPage = Backbone.View.extend({
 	changeDay: function( day ) {
 		this.day = day;
 		this.$el.find("#to-day").html( this.day.toDateString() );
-		this.byUser.reset();
-		this.byStatus.reset();
-		this.skip = 0;
-		this.$el.find("#contents").empty();
-		this.$el.find("#load-more-button").click();
+		this.applyFilter();
 	},
 	refresh: function( ev ) {
 		ev.preventDefault();
 		this.skip = 0;
-		ev.preventDefault();
-		this.$el.find("#contents").empty();
+		this.table.reset();
 		this.collection.clear();
 		this.$el.find("#load-more-button").click();
 	},
 	applyFilter: function( ev ) {
 		try {ev.preventDefault();}catch(e){}
-		this.$el.find(".work-list").hide();
-		var filter_class = "";
-		filter_class += "."+this.$el.find("#by-status").val();
-		filter_class += "."+this.$el.find("#by-user").val();
-		filter_class = filter_class.replace(/\./g, " ").replace(/ {2,}/g," ").trim().replace(/ /g,".");
-		if( filter_class.length > 0) filter_class = "."+filter_class;
-		filter_class = ".work-list"+filter_class.replace(/\.{2,}/g, "");
-		this.$el.find(filter_class.trim()).show();
+		var byUser = $.trim(this.$el.find("#by-user").val());
+		var byDay = this.day.toDateString().trim();
+		var filterObject = {};
+		if( byUser != "" )
+			filterObject.user = byUser;
+		this.userSet.reset();
+		filterObject.updatedAt = byDay;
+		var arr = this.table.where( filterObject );
+		this.$el.find("#contents").empty();
+		$.each( arr, ( i, o ) => {
+			this.renderList( this.collection.get( o.id ) );
+		});
+		this.$el.find(".count").text( arr.length );
+		setTimeout(()=>{
+			this.$el.find("#by-user").val(byUser);
+		}, 100);
 	},
 	load_more: function( ev ) {
 		ev.preventDefault();
 		var self = this;
 		this.waiter.render();
 		var q = new Parse.Query( this.model );
-		q.greaterThanOrEqualTo( "createdAt", this.day );
-		q.lessThan( "createdAt", new Date( this.day.getTime() + 24*60*60*1000 ) );
 		q.descending( "updatedAt" );
 		q.limit( self.limit );
 		q.skip( self.skip );
 		q.find().then(res=>{
 			$.each( res, ( i, e ) => {
-				self.renderList( e );
+				self.remember( e );
 			});
-			self.applyFilter( null );
+			self.applyFilter();
 			if( res.length == 0 ) self.$el.find("#load-more-button").hide();
 			else self.$el.find("#load-more-button").show();
 			self.skip += self.limit;
@@ -471,8 +490,8 @@ const WorkPage = Backbone.View.extend({
 		modal.find(".type").html( this.model.get("type") );
 		modal.find(".created-at").html( this.model.get("createdAt").toLocaleString() );
 		modal.find(".updated-at").html( this.model.get("updatedAt").toLocaleString() );
-		modal.find("#status").val( this.model.get("status") );
-		modal.find("#message").val( this.model.get("message") );
+		if( this.model.has("message") ) modal.find(".message").html( this.model.get("message") );
+		else modal.find(".message").html( "No comment" );
 		this.getUser( this.model.get("user").id ).then(r=> modal.find(".user").html( r.get("name") ) );
 		var template = `<li class="w3-display-container"><div><div class="name"><%= name %></div><div class="w3-tiny added-at"><%= addedAt %></div></div><div class="w3-display-right"><a download="<%=downloadAs%>" target="_blank" href="<%= url %>" class="w3-button w3-theme-l5"><i class="fa fa-download"></i></a></div></li>`;
 		modal.find(".files").empty();
@@ -481,8 +500,8 @@ const WorkPage = Backbone.View.extend({
 		downloadAs += "-"+this.model.get("type").replace(/[\W_]/g, "");
 		$.each( this.model.get("files"), (i, fl)=>{
 			var ext = fl.file.url().substring( fl.file.url().lastIndexOf(".") );
-			ext = downloadAs+"-"+fl.name.replace(/[\W_]/g, "")+ext;
-			var li = template({ downloadAs: ext, name: fl.name, url: fl.file.url(), addedAt: fl.addedAt.toLocaleString()});
+			ext = downloadAs+"-"+fl.type.replace(/[\W_]/g, "")+ext;
+			var li = template({ downloadAs: ext, name: fl.type, url: fl.file.url(), addedAt: fl.addedAt.toLocaleString()});
 			modal.find(".files").append(li);
 		});
 		modal.show();
@@ -498,9 +517,10 @@ const WorkPage = Backbone.View.extend({
 		this.model.set("status", form.status.toLowerCase());
 		this.model.set("message", form.message);
 		this.model.save().then( response => {
+			self.remember( response );
 			self.renderList( response );
 			toastr.info( "Updated" );
-			self.applyFilter( null );
+			self.applyFilter();
 		}).catch(err=>{
 			console.log( err );
 			toastr.error( err.message, err.code );

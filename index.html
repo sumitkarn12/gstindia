@@ -136,10 +136,6 @@
 						<button class="w3-col s6 w3-button w3-block w3-theme-l2" id="to-day"></button>
 						<button class="w3-col s3 w3-button w3-block w3-theme-light" id="next-day"><i class="fa fa-chevron-right"></i></button>
 					</div>
-					<div class="filter-panel">
-						<select class="w3-col s6 w3-select w3-border" id="by-status"></select>
-						<select class="w3-col s6 w3-select w3-border" id="by-user"></select>
-					</div>
 				</div>
 				<div class="w3-section"></div>
 				<ul id="contents" class="w3-ul w3-card"></ul>
@@ -147,38 +143,52 @@
 				<div style="display: flex; justify-content: center; align-items: center;">
 					<button id="load-more-button" class="w3-button w3-circle w3-theme-l2 w3-xlarge"><i class="fa fa-arrow-down"></i></button>
 				</div>
+				<button class="w3-button w3-circle w3-theme-dark open-modal" style="position:fixed; bottom: 15px; right: 15px; width: 70px; height: 70px;">
+					<i class="fa fa-plus fa-2x"></i>
+				</button>
+			</div>	
+		</div>
+		<div class="w3-modal" id="add-modal">
+			<div class="w3-modal-content w3-animate-zoom">
+				<div class="w3-card">
+					<div class="w3-container w3-padding-16 w3-theme-l3" style="box-shadow: 0 2px 5px 0 rgba(0,0,0,0.16);z-index: 1;position: relative;">
+						<span class="w3-right w3-xlarge close" style="cursor: pointer;"><i class="fa fa-close"></i></span>
+						<select id="type" class="w3-select w3-theme-l3 w3-border" style="width:260px;">
+							<option value="income-tax-return">Income tax return</option>
+							<option value="gst">GST</option>
+							<option value="audit">Audit</option>
+						</select>
+					</div>
+					<ul class="w3-ul files"></ul>
+					<textarea class="message w3-input w3-tiny w3-border" placeholder="Optional message"></textarea>
+					<button class="w3-button w3-block w3-theme done">Submit</button>
+				</div>
 			</div>
 		</div>
 		<div class="w3-modal" id="work-modal">
 			<div class="w3-modal-content w3-animate-zoom">
-				<div class="w3-card w3-row">
-					<div class="w3-col s12 m6">
-						<div class="w3-container w3-padding-16 w3-theme-l3" style="box-shadow: 0 2px 5px 0 rgba(0,0,0,0.16);z-index: 1;position: relative;">
-							<span class="w3-right w3-xlarge close" style="cursor: pointer;"><i class="fa fa-close"></i></span>
-							<div class="type w3-large"></div>
-							<div class="w3-small user"></div>
-							<div class="w3-tiny created-at"></div>
-						</div>
-						<div class="w3-container w3-padding-16 w3-theme-l4">
-							<form id="status-change-form">
-								<input type="text" class="w3-input w3-border w3-small" name="status" id="status" /><div class="w3-section"></div>
-								<input type="text" class="w3-input w3-border w3-small" name="message" id="message" /><div class="w3-section"></div>
-								<button class="w3-button w3-block w3-theme-l2"><i class="fa fa-check"></i></button>
-							</form>
-							<div class="w3-section"></div>
-							<div class="updated-at w3-tiny w3-col s6"></div>
-						</div>
+				<div class="w3-card">
+					<div class="w3-container w3-padding-16 w3-theme-l3" style="box-shadow: 0 2px 5px 0 rgba(0,0,0,0.16);z-index: 1;position: relative;">
+						<span class="w3-right w3-xlarge close" style="cursor: pointer;"><i class="fa fa-close"></i></span>
+						<div class="type w3-large"></div>
+						<div class="w3-small user"></div>
+						<div class="w3-tiny created-at"></div>
 					</div>
-					<div class="w3-col s12 m6">
-						<ul class="w3-ul files"></ul>
+					<div class="w3-container w3-padding-16 w3-theme-l4 w3-row">
+						<button class="w3-border assigned-to w3-col s12 w3-button"></button>
+						<div class="status w3-tiny w3-col s6"></div>
+						<div class="updated-at w3-tiny w3-col s6"></div>
+						<div class="message w3-tiny w3-col s12"></div>
 					</div>
-					
+					<ul class="w3-ul files"></ul>
 				</div>
 			</div>
 		</div>
 	</div>
 	
-	<script src="index.js"></script>
+	<script src="/index.js"></script>
+
+	
 </body>
 </html>
 
