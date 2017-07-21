@@ -1,5 +1,4 @@
 
-
 var app = null, _index = null, _ask_expert = null, _work = null, _auth = null, _users = null;
 const AskExpertPage = Backbone.View.extend({
 	el: "#ask-expert",
@@ -29,19 +28,30 @@ const AskExpertPage = Backbone.View.extend({
 		this.form.on( "tbwchange",  ev => {
 			var value = $( ev.currentTarget ).html();
 			value = $.trim( value );
-			if( value.length > 0 )
-				this.$el.find("#ask-modal .done").removeAttr( "disabled" );
-			else
-				this.$el.find("#ask-modal .done").attr( "disabled", "" );
+			if( value.length > 0 ) this.$el.find("#ask-modal .done").removeAttr( "disabled" );
+			else this.$el.find("#ask-modal .done").attr( "disabled", "" );
 		});
-		if( Parse.User.current() )
-			this.userEmail = Parse.User.current().get( "username" );
-		else if ( localStorage.getItem( "userEmail" ) )
-			this.userEmail = localStorage.getItem( "userEmail" );
+		if( Parse.User.current() ) this.userEmail = Parse.User.current().get( "username" );
+		else if ( localStorage.getItem( "userEmail" ) ) this.userEmail = localStorage.getItem( "userEmail" );
 		if( this.userEmail )
 			this.$el.find("#email").val( this.userEmail );
 		this.$el.find("#contents").empty();
 		this.$el.find("#load-more-button").click();
+		db.sync.get("asked").then( object => {
+			if( object && new Date().getTime() < new Date(object.at.getTime()+12*60*60*1000).getTime() ) {
+				console.log( "No need to sync" );
+			} else {
+				this.hardRefresh().then(response=>{
+					console.log( "refreshed", response );
+					this.$el.find(".refresh").click();
+				}).catch(err=>{
+					console.log( "refreshed", err );
+					toastr.error( err.message, err.code );
+				});
+			}
+		});
+		this.day = new Date();
+		this.changeDay( this.day );
 		return this;
 	},
 	render: function( id ) {
@@ -50,31 +60,117 @@ const AskExpertPage = Backbone.View.extend({
 		return this;
 	},
 	renderList: function( object ) {
-		this.collection.set( object.id, object );
 		var ul = this.$el.find("#contents");
-		var li = ul.find( "#li-"+object.id );
-		var json = object.toJSON();
-		json.updatedAt = object.get("updatedAt").toLocaleString();
-		if( li.length == 0) {
-			var li = this.template( json );
-			ul.append( li );
-		} else {
-			li.find(".updated-at").html( json.updatedAt );
-		}
-	},
-	blankFiller: function() {
-		var temp = `<li>No question for now. You can ask question by click + button</li>`;
-		this.$el.find("#contents").append( temp );
+		object.updatedAt = object.updatedAt.toLocaleString();
+		ul.append( this.template( object ) );
 	},
 	events: {
 		"click .go-back": "goBack",
-		"click #load-more-button": "load_more",
 		"click .refresh": "refresh",
+		"click #prev-day": "prevDay",
+		"click #to-day": "toDay",
+		"click #next-day": "nextDay",
+		"click .question-list": "openAnswerModal",
 		"click .open-ask-modal": "openAskModal",
 		"click #ask-modal .done": "doneAskModal",
 		"click #ask-modal .close": "closeAskModal",
-		"click #answer-modal .close": "closeAnswerModal",
-		"click .question-list": "openAnswerModal"
+		"click #answer-modal .close": "closeAnswerModal"
+	},
+	hardRefresh: function() {
+		var self = this;
+		return new Promise( (resolve, reject )=>{
+			this.waiter.render();
+			if( !this.userEmail ) {
+				reject({
+					code: 404,
+					message: "Email not found"
+				});
+				return;
+			}
+			var q = new Parse.Query( Parse.Object.extend("asked") );
+			q.equalTo( "user_email", this.userEmail );
+			q.limit( 1000 );
+			q.descending( "updatedAt" );
+			q.find().then(res=>{
+				var arr = [];
+				$.each( res, ( i, e ) => {
+					var json = e.toJSON();
+					if( e.has("user") ) json.user = e.get("user").id;
+					if( e.has("answeredBy") ) json.answeredBy = e.get("answeredBy").id;
+					if( e.has("answeredAt") ) json.answeredAt = e.get("answeredAt");
+					json.createdAt = e.get("createdAt");
+					json.updatedAt = e.get("updatedAt");
+					json.date = e.get("updatedAt").toDateString();
+					arr.push( json );
+				});
+				db.asked.bulkPut( arr );
+				db.sync.put({ name: "asked", at: new Date() });
+				self.waiter.stop();
+				resolve( arr );
+			}).catch( err => {
+				self.waiter.stop();
+				reject( err );
+			});
+		});
+	},
+	find: function( date ) {
+		var self = this;
+		return new Promise(( resolve, reject )=>{
+			db.asked.where( "date" ).equalsIgnoreCase( date.toDateString() ).
+			and((v)=>(v.user_email.localeCompare(this.user_email))).
+			toArray(v=> resolve( v ));
+		});
+	},
+	toDay: function( ev ) {
+		ev.preventDefault();
+		this.day = new Date();
+		this.changeDay( this.day );
+	},
+	prevDay: function( ev ) {
+		ev.preventDefault();
+		this.day = new Date(this.day.getTime() - 24*60*60*1000)
+		this.changeDay( this.day );
+	},
+	nextDay: function( ev ) {
+		ev.preventDefault();
+		this.day = new Date(this.day.getTime() + 24*60*60*1000)
+		this.changeDay( this.day );
+	},
+	changeDay: function( day ) {
+		this.$el.find( "#to-day" ).html( day.toDateString() );
+		this.$el.find("#contents").empty();
+		this.find( day ).then( response => {
+			if( response.length > 0 )
+				$.each( response, (index, el) => this.renderList( el ) );
+			else
+				this.$el.find("#contents").append( `<li>No question for now. You can ask question by click + button</li>` );
+		});
+	},
+	refresh: function( ev ) {
+		ev.preventDefault();
+		this.changeDay( this.day );
+	},
+	openAnswerModal: function( ev ) {
+		ev.preventDefault();
+		var id = $( ev.currentTarget ).data("id");
+		db.asked.get( id ).then( response => {
+			if( response.answer ) {
+				this.$el.find("#answer-modal #answer").html( response.answer );
+				this.$el.find("#answer-modal .updated-at").html( response.updatedAt.toLocaleString() );
+				this.$el.find("#answer-modal .answered-by").parent().show();
+				this.getUser(response.answeredBy).then( r => {
+					this.$el.find("#answer-modal .answered-by").html( r.get("name") );
+				});
+			} else {
+				this.$el.find("#answer-modal #answer").html( "<p>This question has not been answered yet.</p><p>Please check back after sometime.</p>" );
+				this.$el.find("#answer-modal .answered-by").parent().hide();
+			}
+		});
+		this.$el.find("#answer-modal").show();
+	},
+	closeAnswerModal: function( ev ) {
+		ev.preventDefault();
+		this.$el.find("#answer-modal").hide();
 	},
 	openAskModal: function( ev ) {
 		ev.preventDefault();
@@ -99,71 +195,21 @@ const AskExpertPage = Backbone.View.extend({
 		var q = new Parse.Object( "asked" );
 		q.set( "user_email", this.userEmail );
 		q.set( "question", question.trim() );
-		q.save().then(s=>{
-			self.renderList( s );
+		q.save().then(e=>{
+			var json = e.toJSON();
+			if( e.has("user") ) json.user = e.get("user").id;
+			if( e.has("answeredBy") ) json.answeredBy = e.get("answeredBy").id;
+			if( e.has("answeredAt") ) json.answeredAt = e.get("answeredAt");
+			json.createdAt = e.get("createdAt");
+			json.updatedAt = e.get("updatedAt");
+			json.date = e.get("updatedAt").toDateString();
+			db.asked.put( json ).then( self.changeDay( self.day ) );
 			toastr.info( "Saved" );
 		}).catch( err=> {
 			console.log( err );
 			toastr.error( err.message, err.code );
 		});
 		this.$el.find("#ask-modal").hide();
-	},
-	refresh: function( ev ) {
-		ev.preventDefault();
-		this.skip = 0;
-		this.$el.find("#contents").empty();
-		this.$el.find("#load-more-button").click();
-	},
-	openAnswerModal: function( ev ) {
-		ev.preventDefault();
-		var id = $( ev.currentTarget ).data("id");
-		var object = this.collection.get( id );
-		if( object.has("answer") ) {
-			this.$el.find("#answer-modal #answer").html( object.get("answer") );
-			this.getUser(object.get("answeredBy").id).then( r => {
-				this.$el.find("#answer-modal .answered-by").html( r.get("name") );
-			});
-			this.$el.find("#answer-modal .updated-at").html( object.get("updatedAt").toLocaleString() );
-			this.$el.find("#answer-modal .answered-by").parent().show();
-		} else {
-			this.$el.find("#answer-modal #answer").html( "<p>This question has not been answered yet.</p><p>Please check back after sometime.</p>" );
-			this.$el.find("#answer-modal .answered-by").parent().hide();
-		}
-		this.$el.find("#answer-modal").show();
-	},
-	closeAnswerModal: function( ev ) {
-		ev.preventDefault();
-		this.$el.find("#answer-modal").hide();
-	},
-	load_more: function( ev ) {
-		try {ev.preventDefault();}catch(e){}
-		this.waiter.render();
-		var self = this;
-		if( !this.userEmail ){
-			self.$el.find("#load-more-button").hide();
-			return;
-		}
-		var q = new Parse.Query( Parse.Object.extend("asked") );
-		q.equalTo( "user_email", this.userEmail );
-		q.limit( self.limit );
-		q.skip( self.skip );
-		q.descending( "updatedAt" );
-		q.find().then(res=>{
-			$.each( res, ( i, e ) => {
-				self.renderList( e );
-			});
-			if( res.length == 0 && this.skip == 0 ) this.blankFiller();
-			if( res.length == 0 )
-				self.$el.find("#load-more-button").hide();
-			else
-				self.$el.find("#load-more-button").show();
-			self.skip += self.limit;
-			self.waiter.stop();
-		}).catch( err => {
-			console.warn( err );
-			self.waiter.stop();
-			toastr.infor( err.message, err.code );
-		});
 	},
 	goBack: function( ev ) {
 		ev.preventDefault();
@@ -176,27 +222,26 @@ const AskExpertPage = Backbone.View.extend({
 });
 const WorkPage = Backbone.View.extend({
 	el: "#work",
-	skip: 0,
-	limit: 100,
 	collection: new Map(),
-	template: `
-		<li id="li-<%= objectId %>" data-id="<%= objectId %>" class="work-list" style="cursor: pointer;">
-			<div><%= type %></div>
-			<div class="w3-tiny updated-at"><%= updatedAt %></div>
-		</li>`,
-	type: new Map(),
+	template: _.template($("#cawork-list-template").html()),
 	initialize: function() {
 		this.waiter = new Waiter(()=> this.$el.find("#contents").hide(), ()=>this.$el.find("#contents").show()),
-		this.type.set( "income-tax-return", [ "form_16", "pan", "bank_statement", "adhaar_card" ] );
-		this.type.set( "gst", [ "gstin", "invoice_detail", "pan", "address_proof", "party_ledger" ] );
-		this.type.set( "audit", [ "pan", "tally_account", "bank_statement", "party_ledger", "gst_return_copy", "previous_year_audit_report" ] );
-		this.day = new Date( new Date().toDateString() );
 		this.$el.find( "#waiter" ).append( this.waiter.$el );
-		this.template = _.template( this.template );
-		this.table = new Collection();
-		this.userSet = new Option( "name", this.$el.find(".filter-panel #by-user") );
-		this.$el.find("#to-day").html( this.day.toDateString() );
-		this.$el.find("#load-more-button").click();
+		db.sync.get("cawork").then( object => {
+			if( object && new Date().getTime() < new Date(object.at.getTime()+12*60*60*1000).getTime() ) {
+				console.log( "No need to sync" );
+			} else {
+				this.hardRefresh().then(response=>{
+					console.log( "refreshed", response );
+					this.$el.find(".refresh").click();
+				}).catch(err=>{
+					console.log( "refreshed", err );
+					toastr.error( err.message, err.code );
+				});
+			}
+		});
+		this.day = new Date( new Date().toDateString() );
+		this.changeDay( this.day );
 		return this;
 	},
 	render: function() {
@@ -204,256 +249,279 @@ const WorkPage = Backbone.View.extend({
 		this.$el.show();
 		return this;
 	},
-	remember: function( object ) {
-		this.collection.set( object.id, object );
-		var json = object.toJSON();
-		json.createdAt = new Date( json.createdAt ).toDateString();
-		json.updatedAt = new Date( json.updatedAt ).toDateString();
-		this.table.add( json, { merge:true });
-		return this;
-	},
 	renderList: function( object ) {
 		var ul = this.$el.find( "#contents" );
-		var li = ul.find("#li-"+object.id);
-		var json = object.toJSON();
-		json.updatedAt = object.get("updatedAt").toLocaleString();
-		json.type = json.type.replace(/[\W_]/g, " ").toUpperCase();
+		var li = ul.find("#li-"+object.objectId);
+		object.updatedAt = object.updatedAt.toLocaleString();
+		object.type = object.type.replace(/[\W_]/g, " ").toUpperCase();
 		if( li.length == 0 ) {
-			try {
-				var card = $(this.template( json ));
-				ul.append( card );
-			} catch(e){
-				console.log(e)
-			}
+			var card = $(this.template( object ));
+			ul.append( card );
 		} else {
-			li.find(".updated-at").html(json.updatedAt);
+			li.find(".updated-at").html(object.updatedAt);
 		}
 	},
 	events: {
-		"click .go-back": "goBack",
-		"click #work-modal .close": "closeWorkModal",
-		"click #work-modal .upload": "addFile",
-		"click #work-modal .remove": "removeFile",
-		"click .refresh": "refresh",
-		"click .work-list": "openWorkModal",
 		"click #prev-day": "prevDay",
 		"click #next-day": "nextDay",
 		"click #to-day": "toDay",
-		"click .open-modal": "openAddModal",
-		"change #add-modal #type": "changeFormType",
-		"click #add-modal .close": "closeAddModal",
-		"click #add-modal .done": "doneAddModal",
-		"click #add-modal .files .upload": "openUploadModal",
-		"click #add-modal .files .remove": "removeUploadFile",
-		"change .filter-panel select": "applyFilter",
-		"click #load-more-button": "load_more"
+		"click .refresh": "refresh",
+		"click .work-list": "view",
+		"click .create": "create",
+		"click .edit": "edit",
+		"click .go-back": "goBack"
 	},
-	removeFile: function( ev ) {
-		ev.preventDefault();
-		var type = $( ev.currentTarget ).data( "type" );
-		var files = this.model.get("files");
-		files = files.filter(v => ( v.type != type ));
-		this.model.set("files", files);
-		this.$el.find( "#li-"+this.model.id ).click();
-	},
-	addFile: function( ev ) {
-		ev.preventDefault();
-		var fileWindow = new FileWindow();
-		fileWindow.render(res=>{
-			this.model.add( "files", res );
-			this.$el.find( "#li-"+this.model.id ).click();
+	find: function( date ) {
+		var self = this;
+		return new Promise(( resolve, reject )=>{
+			db.cawork.where( "date" ).equalsIgnoreCase( date.toDateString() ).
+			toArray(v=> resolve( v ));
 		});
-	},
-	openUploadModal: function( ev ) {
-		ev.preventDefault();
-		var type = $( ev.currentTarget ).data("name");
-		var fileWindow = new FileWindow( type );
-		fileWindow.render(res=>{
-			this.model.add( "files", res );
-			this.$el.find("#add-modal .files").find(".upload."+type).hide()
-			this.$el.find("#add-modal .files").find(".remove."+type).show()
-		});
-	},
-	removeUploadFile: function( ev ) {
-		ev.preventDefault();
-		var name = $(ev.currentTarget).data("name");
-		var files = this.model.get( "files" );
-		files = files.filter( e => {
-			return ( e.type != name );
-		});
-		this.model.set( "files", files );
-		this.$el.find("#add-modal .files").find(".upload."+name).show()
-		this.$el.find("#add-modal .files").find(".remove."+name).hide()
-	},
-	changeFormType : function( ev ) {
-		ev.preventDefault();
-		var val = $( ev.currentTarget ).val();
-		var types = this.type.get( val );
-		var form_temp = `
-			<li class="w3-display-container <%= name %>">
-				<div>
-					<div><%= pretty_name %></div>
-					<div class="w3-small file_name"></div>
-				</div>
-				<div class="w3-display-right"><button class="w3-button upload <%= name %>" data-name="<%= name %>"><i class="fa fa-upload"></i></button></div>
-				<div class="w3-display-right"><button style="display:none;" class="w3-button remove <%= name %>" data-name="<%= name %>"><i class="fa fa-close"></i></button></div>
-			</li>
-		`;
-		var form_temp = _.template( form_temp );
-		this.$el.find("#add-modal .files").empty();
-		$.each( types, ( i, e )=> {
-			var li = form_temp({ name: e, pretty_name: e.replace( /[\W\_]+/g, " " ).toUpperCase() });
-			this.$el.find("#add-modal .files").append( li );
-		});
-		this.model.set( "type", val ); 
-	},
-	openAddModal: function( ev ) {
-		ev.preventDefault();
-		this.model = new Parse.Object("cawork");
-		this.$el.find("#add-modal").show();
-		this.$el.find("#add-modal #type").change();
-	},
-	closeAddModal: function( ev ) {
-		ev.preventDefault();
-		this.$el.find("#add-modal").hide();
-	},
-	doneAddModal: function( ev ) {
-		ev.preventDefault();
-		var message = $.trim(this.$el.find("#add-modal .message").val());
-		if( message != "" )
-			this.model.set( "message", message );
-		this.waiter.render();
-		this.model.save().then(r=>{
-			this.remember( r );
-			this.applyFilter();
-			this.waiter.stop();
-			toastr.info( r.get("type"), "Saved" );
-		}).catch(err=>{
-			this.waiter.stop();
-			toastr.error( err.message, err.code );
-		});
-		this.$el.find("#add-modal").hide();
-	},
-	prevDay: function( ev ) {
-		ev.preventDefault();
-		this.day = new Date( this.day.getTime() - 24*60*60*1000 );
-		this.changeDay( this.day );
-	},
-	nextDay: function( ev ) {
-		ev.preventDefault();
-		this.day = new Date( this.day.getTime() + 24*60*60*1000 );
-		this.changeDay( this.day );
 	},
 	toDay: function( ev ) {
 		ev.preventDefault();
 		this.day = new Date();
 		this.changeDay( this.day );
 	},
+	prevDay: function( ev ) {
+		ev.preventDefault();
+		this.day = new Date(this.day.getTime() - 24*60*60*1000)
+		this.changeDay( this.day );
+	},
+	nextDay: function( ev ) {
+		ev.preventDefault();
+		this.day = new Date(this.day.getTime() + 24*60*60*1000)
+		this.changeDay( this.day );
+	},
 	changeDay: function( day ) {
-		this.day = day;
-		this.$el.find("#to-day").html( this.day.toDateString() );
-		this.applyFilter();
+		this.$el.find( "#to-day" ).html( day.toDateString() );
+		this.$el.find("#contents").empty();
+		this.find( day ).then( response => {
+			if( response.length > 0 )
+				$.each( response, (index, el) => this.renderList( el ) );
+			else
+				this.$el.find("#contents").append( `<li>No question for now. You can ask question by click + button</li>` );
+		});
 	},
 	refresh: function( ev ) {
 		ev.preventDefault();
-		this.skip = 0;
-		this.table.reset();
-		this.collection.clear();
-		this.$el.find("#load-more-button").click();
+		this.changeDay( this.day );
 	},
-	applyFilter: function( ev ) {
-		try {ev.preventDefault();}catch(e){}
-		var byDay = this.day.toDateString().trim();
-		var filterObject = {};
-		filterObject.updatedAt = byDay;
-		var arr = this.table.where( filterObject );
-		this.$el.find("#contents").empty();
-		$.each( arr, ( i, o ) => {
-			this.renderList( this.collection.get( o.id ) );
+	toDb: function( parseObject ) {
+		var json = parseObject.toJSON();
+		json.user = parseObject.get("user").id;
+		json.createdAt = parseObject.get("createdAt");
+		json.updatedAt = parseObject.get("updatedAt");
+		json.date = parseObject.get("updatedAt").toDateString();
+		return json;
+	},
+	hardRefresh: function() {
+		var self = this;
+		return new Promise( (resolve, reject )=>{
+			this.waiter.render();
+			var q = new Parse.Query( Parse.Object.extend("cawork") );
+			q.limit( 1000 );
+			q.descending( "updatedAt" );
+			q.find().then(res=>{
+				var arr = [];
+				$.each( res, ( i, e ) => {
+					arr.push( self.toDb( e ) );
+				});
+				db.cawork.bulkPut( arr );
+				db.sync.put({ name: "cawork", at: new Date() });
+				self.waiter.stop();
+				resolve( arr );
+			}).catch( err => {
+				self.waiter.stop();
+				reject( err );
+			});
 		});
-		this.$el.find(".count").text( arr.length );
 	},
-	load_more: function( ev ) {
+	create: function( ev ) {
 		ev.preventDefault();
 		var self = this;
-		this.waiter.render();
-		$(window).scrollTop(0);
-		var q = new Parse.Query( Parse.Object.extend("cawork") );
-		q.descending( "updatedAt" );
-		q.limit( self.limit );
-		q.skip( self.skip );
-		q.find().then(res=>{
-			$.each( res, ( i, e ) => {
-				self.remember( e );
-			});
-			self.applyFilter();
-			if( res.length == 0 ) self.$el.find("#load-more-button").hide();
-			else self.$el.find("#load-more-button").show();
-			self.skip += self.limit;
-			self.waiter.stop();
-		}).catch(err=>{
-			this.waiter.stop();
-			toastr.error( err.message, err.code );
-		});;
+		var wf = new WorkForm({
+			mode: "edit",
+			onSubmit: function( model ) {
+				if( model.dirty() ) {
+					model.save().then(r=> {
+						db.cawork.put( self.toDb( r ) ).then((k)=>console.log("Updated", k)).catch(console.error);
+						toastr.info( "Saved" )
+					}).catch(err=>{
+						console.log( err )
+						toastr.info( err.message, err.code );
+					});
+				} else {
+					toastr.info("No need to save")
+				}
+			}
+		});
 	},
-	getUser: function( id ) {
-		if( !_users ) _users = new UserManagement();
-		return _users.fetch( id );
+	view: function( ev ) {
+		ev.preventDefault();
+		var id = $( ev.currentTarget ).data( "id" );
+		db.cawork.get( id ).then( res => {
+			var Model = Backbone.Model.extend();
+			var model = new Model( res );
+			var wf = new WorkForm({
+				mode: "view",
+				model: model
+			});
+		});
+	},
+	edit: function( ev ) {
+		ev.stopPropagation();
+		var self = this;
+		var id = $( ev.currentTarget ).data( "id" );
+		var model = this.collection.get( id );
+		if( model ) {
+			var wf = new WorkForm({
+				mode:"edit",
+				model: model,
+				onSubmit: function( model ) {
+					if( model.dirty() ) {
+						model.save().then(r=> {
+							db.cawork.put( self.toDb( r ) ).then((k)=>console.log("Updated", k)).catch(console.error);
+							toastr.info( "Saved" )
+						}).catch(err=>{
+							console.log( err )
+							toastr.info( err.message, err.code );
+						});
+					}
+				}
+			});
+		} else {
+			this.waiter.render();
+			var model = new Parse.Object( "cawork" );
+			model.set( "objectId", id );
+			model.fetch().then(r=>{
+				this.waiter.stop();
+				this.collection.set( id, model );
+				var wf = new WorkForm({
+					mode:"edit",
+					model: model,
+					onSubmit: function( model ) {
+						if( model.dirty() ) {
+							model.save().then(r=> {
+								db.cawork.put( self.toDb( r ) ).then((k)=>console.log("Updated", k)).catch(console.error);
+								toastr.info( "Saved" )
+							}).catch(err=>{
+								console.log( err )
+								toastr.info( err.message, err.code );
+							});
+						}
+					}
+				});
+			}).catch(err=>{
+							console.log( err )
+							toastr.info( err.message, err.code );
+						});
+		}
 	},
 	goBack: function( ev ) {
 		ev.preventDefault();
 		history.back();
-	},
-	openWorkModal: function( ev ) {
-		ev.preventDefault();
-		var target = $( ev.currentTarget );
-		var id = target.data( "id" );
-		this.model = this.collection.get( id );
-		var modal = this.$el.find("#work-modal");
-		modal.find(".type").html( this.model.get("type") );
-		modal.find(".created-at").html( this.model.get("createdAt").toLocaleString() );
-		modal.find(".updated-at").html( this.model.get("updatedAt").toLocaleString() );
-		if( this.model.has( "message" ) )
-			modal.find(".message").html( this.model.get("message") );
-		else
-			modal.find(".message").html("No comment");
-		this.getUser( this.model.get("user").id ).then(r=> modal.find(".user").html( r.get("name") ) );
-		var template = `
-			<li class="w3-display-container">
-				<div>
-					<div class="name"><%= name %></div>
-					<div class="w3-tiny added-at"><%= addedAt %></div>
-				</div>
-				<div class="w3-display-right">
-					<button class="w3-button remove" data-type="<%= name %>"><i class="fa fa-close"></i></button>
-					<a download="<%=downloadAs%>" target="_blank" href="<%= url %>" class="w3-button"><i class="fa fa-download"></i></a>
-				</div>
-			</li>`;
-		modal.find(".files").empty();
-		template = _.template( template );
-		var downloadAs = this.model.get("user").id;
-		downloadAs += "-"+this.model.get("type").replace(/[\W_]/g, "");
-		$.each( this.model.get("files"), (i, fl)=>{
-			var ext = fl.file.url().substring( fl.file.url().lastIndexOf(".") );
-			ext = downloadAs+"-"+fl.type.replace(/[\W_]/g, "")+ext;
-			var li = template({ downloadAs: ext, name: fl.type, url: fl.file.url(), addedAt: fl.addedAt.toLocaleString()});
-			modal.find(".files").append(li);
-		});
-		modal.show();
-	},
-	closeWorkModal: function(e){
-		e.preventDefault();
-		this.$el.find("#work-modal").hide();
-		if( this.model && this.model.dirty() ) {
-			this.model.save().then(r=>{
-				toastr.info( r.get("name"), "Saved" );
-			}).catch(err=>{
-				console.log( err );
-				toastr.error( "You can't update this data", err.message );
-			});
+	}
+});
+const WorkForm = Backbone.View.extend({
+	tagName: "div",
+	className: "w3-modal",
+	type: new Map(),
+	fileListTemplate: _.template($("#file-list-template").html()),
+	initialize: function( options ) {
+		this.options = $.extend({
+			mode: "view"
+		}, options);
+		this.type.set( "income-tax-return", [ "form_16", "pan", "bank_statement", "adhaar_card" ] );
+		this.type.set( "gst", [ "gstin", "invoice_detail", "pan", "address_proof", "party_ledger" ] );
+		this.type.set( "audit", [ "pan", "tally_account", "bank_statement", "party_ledger", "gst_return_copy", "previous_year_audit_report" ] );
+		this.$el.html( $("#add-modal-template").html() );
+		$("body").append( this.$el );
+		this.$el.show();
+		this.$el.find("#type").change("");
+		if( this.options.model ) {
+			this.model = this.options.model;
+			this.$el.find("#type").val( this.model.get("type")).change();
 		} else {
-			console.log( this.model );
+			this.model = new Parse.Object("cawork");
+			this.$el.find("#type").val( "income-tax-return" ).change();
+		} 
+		if( this.options.mode == "view" ) {
+			this.$el.find(".done, .remove, .upload").hide();
+			this.$el.find("#type, .message").attr("disabled", "");
+		} else {
+			this.$el.find(".done").show();
+			this.$el.find("#type, .message").removeAttr('disabled');
 		}
+		return this;
+	},
+	events: {
+		"click .close": "close",
+		"click .done": "done",
+		"change #type": "updateFileList",
+		"click .upload": "uploadFile",
+		"click .files .remove": "removeFile"
+	},
+	uploadFile: function( ev ) {
+		ev.preventDefault();
+		var type = $( ev.currentTarget ).data("type");
+		var fileWindow = new FileWindow( type );
+		fileWindow.render( res => {
+			this.model.add( "files", res );
+			var li = $(this.fileListTemplate( res ));
+			li.find( ".upload" ).hide();
+			li.find( ".remove" ).show();
+			li.find( ".download" ).show();
+			li.find( ".download" ).attr("href", res.file.url());
+			this.$el.find(".files").find( "."+res.type ).remove();
+			this.$el.find(".files").append( li );
+		});
+	},
+	updateFileList : function( ev ) {
+		ev.preventDefault();
+		var self = this;
+		var val = $( ev.currentTarget ).val();
+		this.model.set( "type", val );
+		var types = this.type.get( val );
+		this.$el.find(".files").empty();
+		$.each( types, ( i, e )=> {
+			var filesFromModel = this.model.get("files");
+			var li = "";
+			if( filesFromModel && filesFromModel.filter(v=>(v.type == e )).length ) {
+				var fileObject = filesFromModel.filter(v=>(v.type == e ));
+				fileObject = fileObject[0];
+				li = $(self.fileListTemplate( fileObject ));
+				li.find( ".upload" ).hide();
+				li.find( ".download" ).attr("href", fileObject.file.url);
+				li.find( ".remove, .download" ).show();
+			} else {
+				li = self.fileListTemplate({ type: e });
+				li = $( li );
+				li.find( ".upload" ).show();
+				li.find( ".remove, .download" ).hide();
+			}
+			this.$el.find(".files").append( li );
+		});
+	},
+	removeFile: function( ev ) {
+		ev.preventDefault();
+		var type = $(ev.currentTarget).data( "type" );
+		var files = this.model.get("files");
+		files = files.filter( v=>( v.type != type ));
+		this.model.set("files", files);
+		this.$el.find(".files>."+type).remove();
+	},
+	done: function( ev ) {
+		ev.preventDefault();
+		var message = $.trim(this.$el.find(".message").val());
+		if( message != "" ) this.model.set( "message", message );
+		try { this.options.onSubmit( this.model ); } catch(e){}
+		this.$el.remove();
+	},
+	close: function( ev ) {
+		ev.preventDefault();
+		this.$el.remove();
+		if( this.options.onCancel ) this.options.onCancel();
 	}
 });
 

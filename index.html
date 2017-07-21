@@ -23,7 +23,6 @@
 	<link rel="stylesheet" href="/assets/trumbowyg/dist/ui/trumbowyg.min.css" />
 	<link rel="manifest" href="manifest.json" />
 </head>
-
 <body>
 	
 	<!-- Index Page -->
@@ -85,13 +84,16 @@
 		<div class="w3-row">
 			<div class="w3-col s3 w3-hide-small"><p></p></div>
 			<div class="w3-col s12 m6 w3-container w3-padding-16">
-				<h3>Your questions</h3>
-				<div id="waiter"></div>
-				<ul class="w3-ul w3-card w3-border" id="contents">
-					<li>Sorry no question for now. By the way you can ask question by clicking envelop button on the top of this screen</li>
-				</ul>
-				<div style="height: 150px; display: flex; justify-content: center; align-items: center;">
-					<button id="load-more-button" class="w3-button w3-circle w3-xlarge w3-theme-l2"><i class="fa fa-arrow-down"></i></button>
+				<div class="w3-card">
+					<div class="day-panel">
+						<button class="w3-col s2 w3-button w3-block w3-theme-light" id="prev-day"><i class="fa fa-chevron-left"></i></button>
+						<button class="w3-col s8 w3-button w3-block w3-theme-l2" id="to-day"></button>
+						<button class="w3-col s2 w3-button w3-block w3-theme-light" id="next-day"><i class="fa fa-chevron-right"></i></button>
+					</div>
+					<div id="waiter"></div>
+					<ul class="w3-ul" id="contents">
+						<li>Sorry no question for now. By the way you can ask question by clicking envelop button on the top of this screen</li>
+					</ul>
 				</div>
 			</div>
 			<div class="w3-col s3 w3-hide-small"><p></p></div>
@@ -139,70 +141,68 @@
 		<div class="w3-row">
 			<div class="w3-col s3 w3-hide-small"><p></p></div>
 			<div class="w3-col s12 m6 w3-container w3-padding-16">
-				<div class="w3-row w3-card">
-					<div class="day-panel">
-						<button class="w3-col s3 w3-button w3-block w3-theme-light" id="prev-day"><i class="fa fa-chevron-left"></i></button>
-						<button class="w3-col s6 w3-button w3-block w3-theme-l2" id="to-day"></button>
-						<button class="w3-col s3 w3-button w3-block w3-theme-light" id="next-day"><i class="fa fa-chevron-right"></i></button>
+				<div class="w3-card">
+					<div class="day-panel w3-row">
+						<button class="w3-col s2 w3-button w3-block w3-theme-light" id="prev-day"><i class="fa fa-chevron-left"></i></button>
+						<button class="w3-col s8 w3-button w3-block w3-theme-l2" id="to-day"></button>
+						<button class="w3-col s2 w3-button w3-block w3-theme-light" id="next-day"><i class="fa fa-chevron-right"></i></button>
 					</div>
+					<div id="waiter"></div>
+					<ul id="contents" class="w3-ul"></ul>
 				</div>
-				<div class="w3-section"></div>
-				<div id="waiter"></div>
-				<ul id="contents" class="w3-ul w3-card"></ul>
-				<div class="w3-section"></div>
-				<div style="display: flex; justify-content: center; align-items: center;">
-					<button id="load-more-button" class="w3-button w3-circle w3-theme-l2 w3-xlarge"><i class="fa fa-arrow-down"></i></button>
-				</div>
-				<button class="w3-button w3-circle w3-theme-dark open-modal" style="position:fixed; bottom: 15px; right: 15px; width: 70px; height: 70px;">
+				<button class="w3-button w3-circle w3-theme-dark create" style="position:fixed; bottom: 15px; right: 15px; width: 70px; height: 70px;">
 					<i class="fa fa-plus fa-2x"></i>
 				</button>
 			</div>	
 			<div class="w3-col s3 w3-hide-small"><p></p></div>
 		</div>
-		<div class="w3-modal" id="add-modal">
-			<div class="w3-modal-content w3-animate-zoom">
-				<div class="w3-card">
-					<div class="w3-container w3-padding-16 w3-theme-l3" style="box-shadow: 0 2px 5px 0 rgba(0,0,0,0.16);z-index: 1;position: relative;">
-						<span class="w3-right w3-xlarge close" style="cursor: pointer;"><i class="fa fa-close"></i></span>
-						<select id="type" class="w3-select w3-theme-l3 w3-border" style="width:260px;">
-							<option value="income-tax-return">Income tax return</option>
-							<option value="gst">GST</option>
-							<option value="audit">Audit</option>
-						</select>
-					</div>
-					<ul class="w3-ul files"></ul>
-					<textarea class="message w3-input w3-tiny w3-border" placeholder="Optional message"></textarea>
-					<button class="w3-button w3-block w3-theme done">Submit</button>
-				</div>
-			</div>
-		</div>
-		<div class="w3-modal" id="work-modal">
-			<div class="w3-modal-content w3-animate-zoom">
-				<div class="w3-card w3-row">
-					<div class="w3-col s12 m6">
-						<div class="w3-container w3-padding-16 w3-theme-l3" style="box-shadow: 0 2px 5px 0 rgba(0,0,0,0.16);z-index: 1;position: relative;">
-							<span class="w3-right w3-xlarge close" style="cursor: pointer;"><i class="fa fa-close"></i></span>
-							<div class="type w3-large"></div>
-							<div class="w3-small user"></div>
-							<div class="w3-tiny created-at"></div>
-						</div>
-						<div class="w3-container w3-padding-16 w3-theme-l4">
-							<div class="message w3-tiny"></div>
-							<div class="updated-at w3-small"></div>
-						</div>
-						<ul class="w3-ul remarks"></ul>
-					</div>
-					<div class="w3-col s12 m6">
-						<ul class="w3-ul files"></ul>
-						<div style="display:flex; justify-content:center;">
-							<button class="w3-button w3-theme-l3 upload"><i class="fa fa-plus"></i></button>
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
 	</div>
-	
+
+	<script type="text/template" id="add-modal-template">
+		<div class="w3-modal-content w3-animate-zoom">
+			<div class="w3-card">
+				<div class="w3-container w3-padding-16 w3-theme-l3" style="box-shadow: 0 2px 5px 0 rgba(0,0,0,0.16);z-index: 1;position: relative;">
+					<span class="w3-right w3-xlarge close" style="cursor: pointer;"><i class="fa fa-close"></i></span>
+					<select id="type" class="w3-select w3-theme-l3 w3-border" style="width:260px;">
+						<option value="income-tax-return">Income tax return</option>
+						<option value="gst">GST</option>
+						<option value="audit">Audit</option>
+					</select>
+				</div>
+				<ul class="w3-ul files"></ul>
+				<button class="w3-button w3-block w3-theme-l3 upload"><i class="fa fa-plus"></i></button>
+				<textarea class="message w3-input w3-tiny w3-border" placeholder="Optional message"></textarea>
+				<button class="w3-button w3-block w3-theme done">Submit</button>
+			</div>
+		</div>
+	</script>
+	<script type="text/template" id="file-list-template">
+		<li class="w3-display-container <%= type %>">
+			<div><%= type %></div>
+			<div class="w3-display-right">
+				<a target="_blank" class="w3-button download <%= type %>" data-type="<%= type %>">
+					<i class="fa fa-download"></i>
+				</a>
+				<button class="w3-button upload <%= type %>" data-type="<%= type %>">
+					<i class="fa fa-upload"></i>
+				</button>
+				<button style="display:none;" class="w3-button remove <%= type %>" data-type="<%= type %>">
+					<i class="fa fa-close"></i>
+				</button>
+			</div>
+		</li>
+	</script>
+	<script type="text/template" id="cawork-list-template">
+		<li id="li-<%= objectId %>" data-id="<%= objectId %>" class="work-list w3-display-container" style="cursor: pointer;">
+			<div>
+				<div><%= type %></div>
+				<div class="w3-tiny updated-at"><%= updatedAt %></div>
+			</div>
+			<div class="w3-display-right">
+				<button class="w3-button edit" data-id="<%= objectId %>"><i class="fa fa-edit"></i></button>
+			</div>
+		</li>
+	</script>
 	<script src="/common.js"></script>
 	<script src="/index.js"></script>
 

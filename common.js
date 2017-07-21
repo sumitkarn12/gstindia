@@ -4,6 +4,14 @@ Parse.initialize("gZcENVmcvqfSSeiIomLKUxH8lLkWhhfPOy7Hml6N", "Oqk4oWh3lpBY7W5ewR
 Parse.serverURL = 'https://parseapi.back4app.com/';
 Parse.Config.get().then(()=> console.log("Config loaded")).catch(( err )=> console.info( "error loading config", err));
 
+const db = new Dexie( "personal-ca" );
+db.version( 1 ).stores({
+	asked: "objectId, date, user_email",
+	cawork: "objectId, date, user, type",
+	user: "objectId, name, email, mobile",
+	sync: "name, at"
+});
+
 toastr.options = {
 	"progressBar": true,
 	"positionClass": "toast-bottom-left"
@@ -103,7 +111,12 @@ const UserManagement = Backbone.View.extend({
 	}
 });
 const Waiter = Backbone.View.extend({
-	template: `<div style="display:none;"><div style="display:flex; justify-content:center; align-items:center; height: 150px; font-size: 48px;"><i class="fa fa-circle-o-notch w3-spin"></i></div></div>`,
+	template: `
+		<div style="display:none;">
+			<div style="padding: 16px 0;width: 100%; display:flex; justify-content:center; font-size: 56px;">
+				<i class="fa fa-circle-o-notch w3-spin"></i>
+			</div>
+		</div>`,
 	initialize: function( onStart, onStop ) {
 		this.onStart = onStart;
 		this.onStop = onStop;
