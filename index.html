@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<title>All About GST of India</title>
+	<title>Your Personal Charted Accountent</title>
 	<meta name="viewport" content="width=device-width,initial-scale=1.0" />
 	<meta charset="utf-8" />
+	<meta name="theme-color" content="teal" />
 	<meta name="description" content="Find answer of your question about GST on our web app or ask an expert." />
 
 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
@@ -13,13 +14,14 @@
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/dexie/1.5.1/dexie.min.js"></script>
 
 	<link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css" />
-	<link rel="stylesheet" href="https://www.w3schools.com/lib/w3-theme-indigo.css" />
+	<link rel="stylesheet" href="https://www.w3schools.com/lib/w3-theme-teal.css" />
 	<link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous" />
 
 	<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/css/toastr.min.css" />
 	<script src="//cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/js/toastr.min.js"></script>
 	<script src="/assets/trumbowyg/dist/trumbowyg.min.js"></script>
 	<link rel="stylesheet" href="/assets/trumbowyg/dist/ui/trumbowyg.min.css" />
+	<link rel="manifest" href="manifest.json" />
 </head>
 
 <body>
@@ -46,23 +48,25 @@
 		<div class="w3-row-padding">
 			<div class="w3-col s3 w3-hide-small"><p></p></div>
 			<div class="w3-col s12 m6 w3-padding-16">
-				<div class="banner w3-display-container">
-					<div class="w3-center" id="nox"></div>
-					<div class="w3-display-bottommiddle w3-block w3-center w3-tiny w3-padding info" style="background: linear-gradient( rgba(255,255,255,0), rgba(255,255,255,1)  );"></div>
-					<div class="w3-display-topright w3-center w3-tiny w3-padding">
-						<div class="w3-tag w3-round w3-tiny count"></div>
+				<div class="w3-card">
+					<div class="banner w3-display-container" style="display:none;">
+						<div class="w3-center" id="nox"></div>
+						<div class="w3-display-bottommiddle w3-block w3-center w3-tiny w3-padding info" style="background: linear-gradient( rgba(255,255,255,0), rgba(255,255,255,1)  );"></div>
+						<div class="w3-display-topright w3-center w3-tiny w3-padding">
+							<div class="w3-tag w3-round w3-tiny count"></div>
+						</div>
+						<div class="w3-display-left">
+							<button class="w3-button prev-nox" style="background: linear-gradient( to left, rgba(255,255,255,0), rgba(255,255,255,1)  );"><i class="fa fa-arrow-left"></i></button>
+						</div>
+						<div class="w3-display-right"">
+							<button class="w3-button next-nox" style="background: linear-gradient( to right, rgba(255,255,255,0), rgba(255,255,255,1)  );"><i class="fa fa-arrow-right"></i></button>
+						</div>
 					</div>
-					<div class="w3-display-left">
-						<button class="w3-button prev-nox" style="background: linear-gradient( to left, rgba(255,255,255,0), rgba(255,255,255,1)  );"><i class="fa fa-arrow-left"></i></button>
+					<div class="w3-bar-block w3-card">
+						<a href="/faq" class="w3-button w3-xlarge w3-block w3-bar-item">GST FAQ</a>
+						<a href="#ask-expert" class="w3-button w3-xlarge w3-block w3-bar-item">Ask Expert</a>
+						<a href="#work" class="w3-button w3-xlarge w3-block w3-bar-item">My CA</a>
 					</div>
-					<div class="w3-display-right"">
-						<button class="w3-button next-nox" style="background: linear-gradient( to right, rgba(255,255,255,0), rgba(255,255,255,1)  );"><i class="fa fa-arrow-right"></i></button>
-					</div>
-				</div>
-				<div class="w3-bar-block w3-card">
-					<a href="/faq" class="w3-button w3-xlarge w3-block w3-bar-item">GST FAQ</a>
-					<a href="#ask-expert" class="w3-button w3-xlarge w3-block w3-bar-item">Ask Expert</a>
-					<a href="#work" class="w3-button w3-xlarge w3-block w3-bar-item">My CA</a>
 				</div>
 			</div>
 			<div class="w3-col s3 w3-hide-small"><p></p></div>
@@ -82,6 +86,7 @@
 			<div class="w3-col s3 w3-hide-small"><p></p></div>
 			<div class="w3-col s12 m6 w3-container w3-padding-16">
 				<h3>Your questions</h3>
+				<div id="waiter"></div>
 				<ul class="w3-ul w3-card w3-border" id="contents">
 					<li>Sorry no question for now. By the way you can ask question by clicking envelop button on the top of this screen</li>
 				</ul>
@@ -142,6 +147,7 @@
 					</div>
 				</div>
 				<div class="w3-section"></div>
+				<div id="waiter"></div>
 				<ul id="contents" class="w3-ul w3-card"></ul>
 				<div class="w3-section"></div>
 				<div style="display: flex; justify-content: center; align-items: center;">
@@ -172,26 +178,37 @@
 		</div>
 		<div class="w3-modal" id="work-modal">
 			<div class="w3-modal-content w3-animate-zoom">
-				<div class="w3-card">
-					<div class="w3-container w3-padding-16 w3-theme-l3" style="box-shadow: 0 2px 5px 0 rgba(0,0,0,0.16);z-index: 1;position: relative;">
-						<span class="w3-right w3-xlarge close" style="cursor: pointer;"><i class="fa fa-close"></i></span>
-						<div class="type w3-large"></div>
-						<div class="w3-small user"></div>
-						<div class="w3-tiny created-at"></div>
+				<div class="w3-card w3-row">
+					<div class="w3-col s12 m6">
+						<div class="w3-container w3-padding-16 w3-theme-l3" style="box-shadow: 0 2px 5px 0 rgba(0,0,0,0.16);z-index: 1;position: relative;">
+							<span class="w3-right w3-xlarge close" style="cursor: pointer;"><i class="fa fa-close"></i></span>
+							<div class="type w3-large"></div>
+							<div class="w3-small user"></div>
+							<div class="w3-tiny created-at"></div>
+						</div>
+						<div class="w3-container w3-padding-16 w3-theme-l4">
+							<div class="message w3-tiny"></div>
+							<div class="updated-at w3-small"></div>
+						</div>
+						<ul class="w3-ul remarks"></ul>
 					</div>
-					<div class="w3-container w3-padding-16 w3-theme-l4">
-						<div class="message w3-tiny"></div>
-						<div class="updated-at w3-small"></div>
+					<div class="w3-col s12 m6">
+						<ul class="w3-ul files"></ul>
+						<div style="display:flex; justify-content:center;">
+							<button class="w3-button w3-theme-l3 upload"><i class="fa fa-plus"></i></button>
+						</div>
 					</div>
-					<ul class="w3-ul files"></ul>
 				</div>
 			</div>
 		</div>
 	</div>
 	
+	<script src="/common.js"></script>
 	<script src="/index.js"></script>
 
-	
+	<div class="w3-tiny w3-center w3-container w3-padding-16">
+		<div>Icons made by <a href="https://www.flaticon.com/authors/popcorns-arts" title="Icon Pond">Icon Pond</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a> is licensed by <a href="http://creativecommons.org/licenses/by/3.0/" title="Creative Commons BY 3.0" target="_blank">CC 3.0 BY</a></div>
+	</div>
 </body>
 </html>
 

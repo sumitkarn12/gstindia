@@ -1,116 +1,7 @@
 //CA Panel
 
-Parse.initialize("gZcENVmcvqfSSeiIomLKUxH8lLkWhhfPOy7Hml6N", "Oqk4oWh3lpBY7W5ewRGGB4REw4zflX3xzgATxXpk");
-Parse.serverURL = 'https://parseapi.back4app.com/';
-Parse.Config.get();
-
 var app = null, _index = null, _questionpage = null, _users = null, _workpage = null;
 
-toastr.options = {
-	"progressBar": true,
-	"positionClass": "toast-bottom-left"
-}
-$.fn.serializeObject = function() {
-	var o = Object.create(null),
-	elementMapper = function(element) {
-		element.name = $.camelCase(element.name);
-		return element;
-	},
-	appendToResult = function(i, element) {
-		var node = o[element.name];
-		if ('undefined' != typeof node && node !== null) {
-			o[element.name] = node.push ? node.push(element.value) : [node, element.value];
-		} else {
-			o[element.name] = element.value;
-		}
-	};
-	$.each($.map(this.serializeArray(), elementMapper), appendToResult);
-	return o;
-};
-const UserManagement = Backbone.View.extend({
-	initialize: function() {
-		this.users = new Map();
-		return this;
-	},
-	fetch: function( id ) {
-		var self = this;
-		return new Promise(( resolve, reject )=>{
-			var user = self.users.get( id );
-			if( user ) {
-				resolve( user );
-			} else {
-				var userQuery = new Parse.Query( Parse.User );
-				userQuery.get( id ).then( res => {
-					self.users.set( res.id, res );
-					resolve( res );
-				}).catch( reject );
-			}
-		});
-	}
-});
-const Collection = Backbone.Collection.extend({
-	model: Backbone.Model.extend({
-		idAttribute: "objectId"
-	})
-});
-const Option = Backbone.Collection.extend({
-	initialize: function( attribute, el ) {
-		el.append( "<option value=''>All</option>" );
-		this.on("add", ( mdl )=>{
-			var val = mdl.get( attribute );
-			el.append(`<option value="${mdl.id}">${val}</option>`);
-		});
-		this.on("remove", ( mdl )=> el.find("[value=${mdl.id}]").remove() );
-		this.on("reset", ( mdl )=> {
-			el.empty();
-			el.append( "<option value=''>All</option>" );
-		});
-	}
-});
-const Waiter = Backbone.View.extend({
-	template: `<div style="display:none;"><div style="display:flex; justify-content:center; align-items:center; height: 150px; font-size: 48px;"><i class="fa fa-circle-o-notch w3-spin"></i></div></div>`,
-	initialize: function() {
-		this.$el = $( this.template );
-		return this;
-	},
-	render: function() {
-		this.$el.show();
-		return this;
-	},
-	stop: function() {
-		this.$el.hide();
-		return this;
-	}
-});
-
-const IndexPage = Backbone.View.extend({
-	el: "#index",
-	initialize: function() {
-		var user = Parse.User.current();
-		if( user ) {
-			var $e = this.$el.find( "#user-detail" );
-			$e.find(".name").html( user.get("name") );
-			$e.find(".email").html( user.get("email") );
-		}
-		return this;
-	},
-	render: function() {
-		$(".page").hide();
-		this.$el.show();
-		return this;
-	},
-	events: {
-		"click .user": "userAction"
-	},
-	userAction: function( ev ) {
-		ev.preventDefault();
-		var $e = this.$el.find("#user-detail");
-		if( Parse.User.current() )
-			( $e.hasClass("w3-show") ) ? $e.removeClass("w3-show") : $e.addClass("w3-show")
-		else
-			location.href = "/auth";
-	}
-});
 const QuestionPage = Backbone.View.extend({
 	el: "#question",
 	template: `
@@ -121,14 +12,14 @@ const QuestionPage = Backbone.View.extend({
 		</li>`,
 	model: Parse.Object.extend("asked"),
 	initialize: function() {
+		this.waiter = new Waiter(()=> this.$el.find("#contents").hide(), ()=>this.$el.find("#contents").show()),
+		this.$el.find( "#waiter" ).append( this.waiter.$el );
 		this.skip = 0;
 		this.limit = 100;
 		this.collection = new Map();
 		this.table = new Collection();
-		this.waiter = new Waiter();
 		this.day = new Date(new Date().toDateString());
 		this.$el.find("#to-day").html( this.day.toDateString() );
-		this.$el.prepend( this.waiter.$el );
 		this.template = _.template( this.template );
 		this.userSet = new Option( "user_email", this.$el.find("#by-user") );
 		this.$el.find("#load-more-button").click();
@@ -338,7 +229,6 @@ const WorkPage = Backbone.View.extend({
 	skip: 0,
 	limit: 100,
 	collection: new Map(),
-	waiter: new Waiter(),
 	template: `
 		<li id="li-<%= objectId %>" data-status="<%= status %>" data-id="<%= objectId %>" class="work-list <%=status%>" style="cursor: pointer;">
 			<div><%= type %></div>
@@ -350,8 +240,9 @@ const WorkPage = Backbone.View.extend({
 		</li>`,
 	model: Parse.Object.extend("cawork"),
 	initialize: function() {
+		this.waiter = new Waiter(()=> this.$el.find("#contents").hide(), ()=>this.$el.find("#contents").show()),
+		this.$el.find( "#waiter" ).append( this.waiter.$el );
 		this.day = new Date( new Date().toDateString() );
-		this.$el.prepend( this.waiter.$el );
 		this.template = _.template( this.template );
 		this.userSet = new Option( "name", this.$el.find("#by-user") );
 		this.table = new Collection();
@@ -529,127 +420,6 @@ const WorkPage = Backbone.View.extend({
 		this.$el.find("#work-modal .close").click();
 	}
 });
-const UserSelectorPage = Backbone.View.extend({
-	waiter: new Waiter,
-	tagName: "div",
-	className: "w3-modal",
-	template: `
-			<li data-id="<%= objectId %>" class="user-li" style="cursor:pointer;">
-				<div class="w3-text-teal"><%= name %></div>
-				<div class="w3-tiny w3-text-blue"><%= username %></div>
-				<div class="w3-tiny w3-text-blue"><%= mobile %></div>
-			</li>
-	`,
-	initialize: function() {
-		_.extend( this, Backbone.Events );
-		this.selected = new Map();
-		this.collection = new Map();
-		this.$el.append(`
-	<div class="w3-modal-content w3-animate-zoom">
-		<div class="w3-container w3-padding-16">
-			<div class="w3-display-container w3-card">
-				<form id="search">
-					<div>
-						<input type="search" id="q" name="q" class="w3-input w3-border" placeholder="Enter name, email or mobile..." />
-					</div>
-					<div class="w3-display-right">
-						<button class="w3-button w3-border-left"><i class="fa fa-search"></i></button>
-					</div>
-				</form>
-			</div>
-			<div class="w3-section"></div>
-			<ul class="w3-ul w3-card">
-				<li class="w3-large">Searched</li>
-				<div class="contents"></div>
-			</ul>
-			<div class="w3-section"></div>
-			<ul class="w3-ul w3-card">
-				<li class="w3-large">Selected</li>
-				<div class="selected"></div>
-			</ul>
-			<div class="w3-section"></div>
-			<div class="w3-row">
-				<div class="w3-col s2 w3-center">
-					<button id="close" class="w3-button w3-block w3-theme-l3"><i class="fa fa-close"></i></button>
-				</div>
-				<div class="w3-col s10">
-					<button id="done" class="w3-button w3-block w3-theme">Submit</button>
-				</div>
-			</div>
-		</div>
-	</div>
-		`);
-		this.$el.find(".w3-modal-content").prepend( this.waiter.$el );
-		$("body").append( this.$el );
-		var self = this;
-		this.template = _.template( this.template );
-		return this;
-	},
-	render: function( callback ) {
-		this.onSelected = callback;
-		this.$el.show();
-		return this;
-	},
-	events: {
-		"click #close": "close",
-		"click #done": "done",
-		"submit #search": "search",
-		"click .user-li": "toggle"
-	},
-	toggle: function( ev ) {
-		ev.preventDefault();
-		var target = $( ev.currentTarget );
-		var uid = target.data("id");
-		if( target.hasClass( "selected-li" ) ) {
-			this.selected.delete( uid );
-			target.removeClass( "selected-li" );
-			this.$el.find(".contents").append( target );
-		} else {
-			this.selected.set( uid, this.collection.get( uid ) );
-			target.addClass( "selected-li" );
-			this.$el.find(".selected").append( target );
-		}
-	},
-	search: function( ev ) {
-		ev.preventDefault();
-		var q = $( ev.currentTarget ).serializeObject().q;
-		var self = this;
-		self.$el.find(".contents").empty();
-		self.waiter.render();
-		var nameQ = new Parse.Query( Parse.User );
-		nameQ.startsWith( "name", q );
-		var emailQ = new Parse.Query( Parse.User );
-		emailQ.startsWith( "username", q );
-		var mobileQ = new Parse.Query( Parse.User );
-		mobileQ.startsWith( "mobile", q );
-		var mainQ =  Parse.Query.or( nameQ, emailQ, mobileQ );
-		mainQ.find().then( response => {
-			self.waiter.stop();
-			$.each( response, (i,e)=>{
-				var json = e.toJSON();
-				if( !json.mobile ) json.mobile = "xxxxx xxxxx";
-				var li = self.template( json );
-				self.$el.find(".contents").append( li );
-				self.collection.set( e.id, e );
-			});
-		}).catch(err=>{
-			self.waiter.stop();
-			console.log( err );
-			toastr.error( err.message, err.code );
-		});
-	},
-	done: function( ev ) {
-		ev.preventDefault();
-		this.$el.find("#close").click();
-		var asArray = [];
-		this.selected.forEach( v => asArray.push( v ) );
-		this.onSelected( asArray );
-	},
-	close: function( ev ) {
-		ev.preventDefault();
-		this.$el.remove();
-	}
-});
 
 const Routes = Backbone.Router.extend({
 	routes: {
@@ -667,7 +437,7 @@ const Routes = Backbone.Router.extend({
 		if (callback) callback.apply(this, args);
 	},
 	index: function() {
-		if( !_index ) _index = new IndexPage();
+		if( !_index ) _index = new IndexPage( "ca" );
 		_index.render();
 	},
 	ca: function() {

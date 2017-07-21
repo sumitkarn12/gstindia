@@ -1,175 +1,11 @@
 
 
-Parse.initialize("gZcENVmcvqfSSeiIomLKUxH8lLkWhhfPOy7Hml6N", "Oqk4oWh3lpBY7W5ewRGGB4REw4zflX3xzgATxXpk");
-Parse.serverURL = 'https://parseapi.back4app.com/';
-Parse.Config.get();
 var app = null, _index = null, _ask_expert = null, _work = null, _auth = null, _users = null;
-toastr.options = {
-	"progressBar": true,
-	"positionClass": "toast-bottom-left"
-}
-$.fn.serializeObject = function() {
-	var o = Object.create(null),
-	elementMapper = function(element) {
-		element.name = $.camelCase(element.name);
-		return element;
-	},
-	appendToResult = function(i, element) {
-		var node = o[element.name];
-		if ('undefined' != typeof node && node !== null) {
-			o[element.name] = node.push ? node.push(element.value) : [node, element.value];
-		} else {
-			o[element.name] = element.value;
-		}
-	};
-	$.each($.map(this.serializeArray(), elementMapper), appendToResult);
-	return o;
-};
-$.fn.nox = function( settings ) {
-	var panels = [];
-	var current = 0;
-	var base = this;
-	var timeout = null;
-	var defaults = {
-		infoOn: base.find(".info"),
-		delay: 3000
-	};
-	$.extend( defaults, settings );
-	var indexen = function( i, el ) {
-		el = $( el );
-		panels[ parseInt( el.data("index") ) ] = el;
-	};
-	this.show = function( idx ) {
-		if( idx == panels.length ) idx = 0;
-		if( idx < 0 ) idx = panels.length - 1;
-		hideAll();
-		panels[ idx ].show();
-		defaults.infoOn.html( panels[idx].data("message") );
-		defaults.countOn.html( (idx+1)+"/"+panels.length );
-		current = idx;
-		clearTimeout( timeout );
-		timeout = setTimeout(function() { base.next(); }, defaults.delay);
-		return this;
-	};
-	this.next = function() {
-		this.show( ++current );
-		return this;
-	};
-	this.prev = function() {
-		this.show( --current );
-		return this;
-	};
-	var hideAll = function() {
-		base.find(".nox-panel").hide();
-	};
-	this.find(".nox-panel").each( indexen );
-	this.show( 0 );
-	return this;
-};
-
-const UserManagement = Backbone.View.extend({
-	initialize: function() {
-		this.users = new Map();
-		return this;
-	},
-	fetch: function( id ) {
-		var self = this;
-		return new Promise(( resolve, reject )=>{
-			var user = self.users.get( id );
-			if( user ) {
-				resolve( user );
-			} else {
-				var userQuery = new Parse.Query( Parse.User );
-				userQuery.get( id ).then( res => {
-					self.users.set( res.id, res );
-					resolve( res );
-				}).catch( reject );
-			}
-		});
-	}
-});
-const Waiter = Backbone.View.extend({
-	template: `<div style="display:none;"><div style="display:flex; justify-content:center; align-items:center; height: 150px; font-size: 48px;"><i class="fa fa-circle-o-notch w3-spin"></i></div></div>`,
-	initialize: function() {
-		this.$el = $( this.template );
-		return this;
-	},
-	render: function() {
-		this.$el.show();
-		return this;
-	},
-	stop: function() {
-		this.$el.hide();
-		return this;
-	}
-
-});
-const Collection = Backbone.Collection.extend({
-	model: Backbone.Model.extend({
-		idAttribute: "objectId"
-	})
-});
-
-const IndexPage = Backbone.View.extend({
-	el: "#index",
-	initialize: function() {
-		var user = Parse.User.current();
-		if( user ) {
-			var $e = this.$el.find( "#user-detail" );
-			$e.find(".name").html( user.get("name") );
-			$e.find(".email").html( user.get("email") );
-		}
-		var nox_panel_temp = `<a href="<%=redirectTo%>" data-message="<%=info%>" data-index="<%=index%>" class="nox-panel w3-animate-opacity"><img class="w3-image" src="<%= imageUrl %>" style="width:100%" /></a>`;
-		nox_panel_temp = _.template( nox_panel_temp );
-		var nox = this.$el.find("#nox").empty();
-		Parse.Config.get().then(conf=>{
-			var sliders = JSON.parse(conf.get( "user_slider" ));
-			$.each( sliders, ( i, e )=>{
-				el = nox.append( nox_panel_temp( e ) );
-			});
-			this.nox = nox.nox({
-				infoOn: nox.parent().find(".info"),
-				delay: 6000,
-				countOn: nox.parent().find(".count")
-			});
-		}).catch( er=> {
-			toastr.error(er.message, er.code);
-		});
-		return this;
-	},
-	render: function() {
-		$(".page").hide();
-		this.$el.show();
-		return this;
-	},
-	events: {
-		"click .user": "userAction",
-		"click .next-nox": "nextImage",
-		"click .prev-nox": "prevImage"
-	},
-	prevImage: function( ev ) {
-		ev.preventDefault();
-		this.nox.prev();
-	},
-	nextImage: function( ev ) {
-		ev.preventDefault();
-		this.nox.next();
-	},
-	userAction: function( ev ) {
-		ev.preventDefault();
-		var $e = this.$el.find("#user-detail");
-		if( Parse.User.current() )
-			( $e.hasClass("w3-show") ) ? $e.removeClass("w3-show") : $e.addClass("w3-show")
-		else
-			location.href = "/auth";
-	}
-});
 const AskExpertPage = Backbone.View.extend({
 	el: "#ask-expert",
 	collection: new Map(),
 	skip: 0,
 	limit: 20,
-	waiter: new Waiter,
 	template: `
 		<li style="cursor:pointer;" class='question-list' id="li-<%= objectId %>" data-id="<%= objectId %>">
 			<div class="question"><%= question %></div>
@@ -178,7 +14,8 @@ const AskExpertPage = Backbone.View.extend({
 		</li>
 	`,
 	initialize: function() {
-		this.$el.prepend( this.waiter.$el );
+		this.waiter = new Waiter(()=> this.$el.find("#contents").hide(), ()=>this.$el.find("#contents").show()),
+		this.$el.find( "#waiter" ).append( this.waiter.$el );
 		this.template = _.template( this.template );
 		this.form = this.$el.find("#question").trumbowyg({
 			 btns: [
@@ -342,20 +179,19 @@ const WorkPage = Backbone.View.extend({
 	skip: 0,
 	limit: 100,
 	collection: new Map(),
-	waiter: new Waiter(),
 	template: `
 		<li id="li-<%= objectId %>" data-id="<%= objectId %>" class="work-list" style="cursor: pointer;">
 			<div><%= type %></div>
 			<div class="w3-tiny updated-at"><%= updatedAt %></div>
 		</li>`,
-	model: Parse.Object.extend("cawork"),
 	type: new Map(),
 	initialize: function() {
+		this.waiter = new Waiter(()=> this.$el.find("#contents").hide(), ()=>this.$el.find("#contents").show()),
 		this.type.set( "income-tax-return", [ "form_16", "pan", "bank_statement", "adhaar_card" ] );
 		this.type.set( "gst", [ "gstin", "invoice_detail", "pan", "address_proof", "party_ledger" ] );
 		this.type.set( "audit", [ "pan", "tally_account", "bank_statement", "party_ledger", "gst_return_copy", "previous_year_audit_report" ] );
 		this.day = new Date( new Date().toDateString() );
-		this.$el.prepend( this.waiter.$el );
+		this.$el.find( "#waiter" ).append( this.waiter.$el );
 		this.template = _.template( this.template );
 		this.table = new Collection();
 		this.userSet = new Option( "name", this.$el.find(".filter-panel #by-user") );
@@ -396,6 +232,8 @@ const WorkPage = Backbone.View.extend({
 	events: {
 		"click .go-back": "goBack",
 		"click #work-modal .close": "closeWorkModal",
+		"click #work-modal .upload": "addFile",
+		"click #work-modal .remove": "removeFile",
 		"click .refresh": "refresh",
 		"click .work-list": "openWorkModal",
 		"click #prev-day": "prevDay",
@@ -410,12 +248,28 @@ const WorkPage = Backbone.View.extend({
 		"change .filter-panel select": "applyFilter",
 		"click #load-more-button": "load_more"
 	},
+	removeFile: function( ev ) {
+		ev.preventDefault();
+		var type = $( ev.currentTarget ).data( "type" );
+		var files = this.model.get("files");
+		files = files.filter(v => ( v.type != type ));
+		this.model.set("files", files);
+		this.$el.find( "#li-"+this.model.id ).click();
+	},
+	addFile: function( ev ) {
+		ev.preventDefault();
+		var fileWindow = new FileWindow();
+		fileWindow.render(res=>{
+			this.model.add( "files", res );
+			this.$el.find( "#li-"+this.model.id ).click();
+		});
+	},
 	openUploadModal: function( ev ) {
 		ev.preventDefault();
 		var type = $( ev.currentTarget ).data("name");
 		var fileWindow = new FileWindow( type );
 		fileWindow.render(res=>{
-			this.new_model.add( "files", res );
+			this.model.add( "files", res );
 			this.$el.find("#add-modal .files").find(".upload."+type).hide()
 			this.$el.find("#add-modal .files").find(".remove."+type).show()
 		});
@@ -423,11 +277,11 @@ const WorkPage = Backbone.View.extend({
 	removeUploadFile: function( ev ) {
 		ev.preventDefault();
 		var name = $(ev.currentTarget).data("name");
-		var files = this.new_model.get( "files" );
+		var files = this.model.get( "files" );
 		files = files.filter( e => {
 			return ( e.type != name );
 		});
-		this.new_model.set( "files", files );
+		this.model.set( "files", files );
 		this.$el.find("#add-modal .files").find(".upload."+name).show()
 		this.$el.find("#add-modal .files").find(".remove."+name).hide()
 	},
@@ -451,26 +305,25 @@ const WorkPage = Backbone.View.extend({
 			var li = form_temp({ name: e, pretty_name: e.replace( /[\W\_]+/g, " " ).toUpperCase() });
 			this.$el.find("#add-modal .files").append( li );
 		});
-		this.new_model.set( "type", val ); 
+		this.model.set( "type", val ); 
 	},
 	openAddModal: function( ev ) {
 		ev.preventDefault();
-		this.new_model = new this.model();
+		this.model = new Parse.Object("cawork");
 		this.$el.find("#add-modal").show();
 		this.$el.find("#add-modal #type").change();
 	},
 	closeAddModal: function( ev ) {
 		ev.preventDefault();
 		this.$el.find("#add-modal").hide();
-		this.new_model = null;
 	},
 	doneAddModal: function( ev ) {
 		ev.preventDefault();
 		var message = $.trim(this.$el.find("#add-modal .message").val());
 		if( message != "" )
-			this.new_model.set( "message", message );
+			this.model.set( "message", message );
 		this.waiter.render();
-		this.new_model.save().then(r=>{
+		this.model.save().then(r=>{
 			this.remember( r );
 			this.applyFilter();
 			this.waiter.stop();
@@ -525,7 +378,7 @@ const WorkPage = Backbone.View.extend({
 		var self = this;
 		this.waiter.render();
 		$(window).scrollTop(0);
-		var q = new Parse.Query( this.model );
+		var q = new Parse.Query( Parse.Object.extend("cawork") );
 		q.descending( "updatedAt" );
 		q.limit( self.limit );
 		q.skip( self.skip );
@@ -565,7 +418,17 @@ const WorkPage = Backbone.View.extend({
 		else
 			modal.find(".message").html("No comment");
 		this.getUser( this.model.get("user").id ).then(r=> modal.find(".user").html( r.get("name") ) );
-		var template = `<li class="w3-display-container"><div><div class="name"><%= name %></div><div class="w3-tiny added-at"><%= addedAt %></div></div><div class="w3-display-right"><a download="<%=downloadAs%>" target="_blank" href="<%= url %>" class="w3-button w3-theme-l5"><i class="fa fa-download"></i></a></div></li>`;
+		var template = `
+			<li class="w3-display-container">
+				<div>
+					<div class="name"><%= name %></div>
+					<div class="w3-tiny added-at"><%= addedAt %></div>
+				</div>
+				<div class="w3-display-right">
+					<button class="w3-button remove" data-type="<%= name %>"><i class="fa fa-close"></i></button>
+					<a download="<%=downloadAs%>" target="_blank" href="<%= url %>" class="w3-button"><i class="fa fa-download"></i></a>
+				</div>
+			</li>`;
 		modal.find(".files").empty();
 		template = _.template( template );
 		var downloadAs = this.model.get("user").id;
@@ -581,65 +444,16 @@ const WorkPage = Backbone.View.extend({
 	closeWorkModal: function(e){
 		e.preventDefault();
 		this.$el.find("#work-modal").hide();
-	}
-});
-
-const FileWindow = Backbone.View.extend({
-	waiter: new Waiter,
-	tagName: "div",
-	className: "w3-modal",
-	initialize: function( form_type ) {
-		this.$el.append(`
-			<div class="w3-modal-content w3-animate-zoom">
-				<div class="w3-container w3-padding-16">
-					<span class="w3-right w3-xlarge" id="close" style="cursor:pointer;"><i class="fa fa-close"></i></span>
-					<input type="text" id="type" class="w3-input w3-border" placeholder="File Name" style="width:90%;" />
-					<div class="w3-section"></div>
-					<input type="file" id="file" class="w3-input w3-border" placeholder="File Name" />
-				</div>
-			</div>
-		`);
-		this.$el.find("#type").val( form_type );
-		this.$el.find(".w3-modal-content").prepend( this.waiter.$el );
-		$("body").append( this.$el );
-		return this;
-	},
-	render: function( callback ) {
-		this.callback = callback;
-		this.$el.show();
-		return this;
-	},
-	events: {
-		"click #close": "close",
-		"change #file": "upload"
-	},
-	upload: function( ev ) {
-		ev.preventDefault();
-		var name = this.$el.find("#type").val();
-		if( $.trim( name ) == "" ) {
-			toastr.error( "Enter file name" );
-			return;
-		}
-		var target = $( ev.currentTarget )[0];
-		if (target.files.length > 0) {
-			var file = target.files[0];
-			var parseFile = new Parse.File(name, file);
-			this.waiter.render();
-			parseFile.save().then(r=> {
-				this.$el.find("#close").click();
-				this.waiter.stop();
-				this.callback({
-					type: name,
-					file: r,
-					addedAt: new Date()
-				});
-				console.log( r );
+		if( this.model && this.model.dirty() ) {
+			this.model.save().then(r=>{
+				toastr.info( r.get("name"), "Saved" );
+			}).catch(err=>{
+				console.log( err );
+				toastr.error( "You can't update this data", err.message );
 			});
+		} else {
+			console.log( this.model );
 		}
-	},
-	close: function( ev ) {
-		ev.preventDefault();
-		this.$el.remove();
 	}
 });
 
