@@ -1,44 +1,3 @@
-Parse.initialize("gZcENVmcvqfSSeiIomLKUxH8lLkWhhfPOy7Hml6N", "Oqk4oWh3lpBY7W5ewRGGB4REw4zflX3xzgATxXpk");
-Parse.serverURL = 'https://parseapi.back4app.com/';
-
-toastr.options = {
-	"progressBar": true,
-	"positionClass": "toast-bottom-left"
-}
-
-$.fn.serializeObject = function() {
-	var o = Object.create(null),
-	elementMapper = function(element) {
-		element.name = $.camelCase(element.name);
-		return element;
-	},
-	appendToResult = function(i, element) {
-		var node = o[element.name];
-		if ('undefined' != typeof node && node !== null) {
-			o[element.name] = node.push ? node.push(element.value) : [node, element.value];
-		} else {
-			o[element.name] = element.value;
-		}
-	};
-	$.each($.map(this.serializeArray(), elementMapper), appendToResult);
-	return o;
-};
-
-const Waiter = Backbone.View.extend({
-	template: `<div style="display:none;"><div class="w3-xxxlarge" style="display:flex; justify-content:center; align-items:center;"><i class="fa fa-circle-o-notch w3-spin"></i></div></div>`,
-	initialize: function() {
-		this.$el = $( this.template );
-		return this;
-	},
-	render: function() {
-		this.$el.show();
-		return this;
-	},
-	stop: function() {
-		this.$el.hide();
-		return this;
-	}
-});
 
 var app = null, _auth = null, _profile = null;
 
@@ -175,6 +134,7 @@ const Routes = Backbone.Router.extend({
 	},
 	logout: function() {
 		toastr.info( "Logging out" );
+		db.delete().then( console.log )
 		Parse.User.logOut().then(()=>{
 			location.href = "/auth";
 		}).catch(()=> {
