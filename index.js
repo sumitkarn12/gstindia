@@ -515,9 +515,12 @@ const WorkForm = Backbone.View.extend({
 const Routes = Backbone.Router.extend({
 	routes: {
 		"": 									"index",
+		"index.html": 							"index",
 		"ask-expert.html": 						"ask_expert",
 		"ask-expert": 							"ask_expert",
-		"work(/:id)": 							"work"
+		"work": 								"work"
+		"work.html": 							"work"
+		"work/:id": 							"work"
 		"work(/:id).html": 						"work"
 	},
 	index: function() {
