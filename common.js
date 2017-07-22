@@ -150,7 +150,8 @@ const Collection = Backbone.Collection.extend({
 const IndexPage = Backbone.View.extend({
 	el: "#index",
 	page_type: "user",
-	initialize: function( name ) {
+	initialize: function( name, navigate ) {
+		this.navigate = navigate;
 		this.$el.find(".banner").hide();
 		if ( name )
 			this.page_type = name;
@@ -190,7 +191,11 @@ const IndexPage = Backbone.View.extend({
 	events: {
 		"click .user": "userAction",
 		"click .next-nox": "nextImage",
-		"click .prev-nox": "prevImage"
+		"click .prev-nox": "prevImage",
+		"click a": "route"
+	},
+	route: function( ev ) {
+		try { this.navigate( ev ); } catch(e){ console.log( e );}
 	},
 	prevImage: function( ev ) {
 		ev.preventDefault();

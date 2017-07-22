@@ -514,13 +514,17 @@ const WorkForm = Backbone.View.extend({
 
 const Routes = Backbone.Router.extend({
 	routes: {
-		"": 									"index",
-		"index.html": 							"index",
-		"ask-expert.html": 						"ask_expert",
-		"work.html": 							"work"
+		"": 										"index",
+		"user/index.html": 							"index",
+		"user/ask-expert.html": 						"ask_expert",
+		"user/work.html": 							"work"
 	},
 	index: function() {
-		if( !_index ) _index = new IndexPage();
+		if( !_index ) _index = new IndexPage("user", ( ev )=>{
+			ev.preventDefault();
+			var href = $(ev.currentTarget).attr("href");
+			this.navigate( href,  { trigger:true });
+		});
 		_index.render();
 	},
 	ask_expert: function() {
@@ -542,4 +546,6 @@ const Routes = Backbone.Router.extend({
 });
 app = new Routes();
 Backbone.history.start({ pushState:true });
+var currentLocation = location.href.substring( location.href.lastIndexOf("/") )
+app.navigate( "user"+currentLocation,  { trigger:true, replace:true });
 
