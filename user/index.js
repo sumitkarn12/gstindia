@@ -66,6 +66,7 @@ const AskExpertPage = Backbone.View.extend({
 	},
 	events: {
 		"click .go-back": "goBack",
+		"click .go-home": "goHome",
 		"click .refresh": "refresh",
 		"click #prev-day": "prevDay",
 		"click #to-day": "toDay",
@@ -211,6 +212,10 @@ const AskExpertPage = Backbone.View.extend({
 		});
 		this.$el.find("#ask-modal").hide();
 	},
+	goHome: function( ev ) {
+		ev.preventDefault();
+		app.navigate( "user/index.html", { trigger:true });
+	},
 	goBack: function( ev ) {
 		ev.preventDefault();
 		history.back();
@@ -269,6 +274,7 @@ const WorkPage = Backbone.View.extend({
 		"click .work-list": "view",
 		"click .create": "create",
 		"click .edit": "edit",
+		"click .go-home": "goHome",
 		"click .go-back": "goBack"
 	},
 	find: function( date ) {
@@ -406,6 +412,10 @@ const WorkPage = Backbone.View.extend({
 			});
 		}
 	},
+	goHome: function( ev ) {
+		ev.preventDefault();
+		app.navigate( "user/index.html", { trigger:true });
+	},
 	goBack: function( ev ) {
 		ev.preventDefault();
 		history.back();
@@ -521,9 +531,11 @@ const Routes = Backbone.Router.extend({
 	},
 	index: function() {
 		if( !_index ) _index = new IndexPage("user", ( ev )=>{
-			ev.preventDefault();
 			var href = $(ev.currentTarget).attr("href");
-			this.navigate( href,  { trigger:true });
+			if ( this.routes.hasOwnProperty( href.substring(1) ) ) {
+				ev.preventDefault();
+				this.navigate( href,  { trigger:true });
+			}
 		});
 		_index.render();
 	},
