@@ -337,26 +337,6 @@ const WorkPage = Backbone.View.extend({
 			});
 		});
 	},
-	create: function( ev ) {
-		ev.preventDefault();
-		var self = this;
-		var wf = new WorkForm({
-			mode: "edit",
-			onSubmit: function( model ) {
-				if( model.dirty() ) {
-					model.save().then(r=> {
-						db.cawork.put( self.toDb( r ) ).then((k)=>console.log("Updated", k)).catch(console.error);
-						toastr.info( "Saved" )
-					}).catch(err=>{
-						console.log( err )
-						toastr.info( err.message, err.code );
-					});
-				} else {
-					toastr.info("No need to save")
-				}
-			}
-		});
-	},
 	view: function( ev ) {
 		ev.preventDefault();
 		var id = $( ev.currentTarget ).data( "id" );
@@ -369,6 +349,34 @@ const WorkPage = Backbone.View.extend({
 			});
 		});
 	},
+	onSubmit: function( parseObject ) {
+		var self = this;
+		console.log( "Saving", parseObject );
+		if( parseObject.dirty() ) {
+			parseObject.save().then(r=> {
+				this.collection.set( parseObject.id, parseObject );
+				db.cawork.put( self.toDb( r ) )
+				.then((k)=>{
+					console.log("Updated", k);
+					toastr.info( "Saved" );
+					self.$el.find('.refresh').click();
+				}).catch(console.error);
+			}).catch(err=>{
+				console.log( err )
+				toastr.info( err.message, err.code );
+			});
+		} else {
+			console.log( "No change found" );
+		}
+	},
+	create: function( ev ) {
+		ev.preventDefault();
+		var self = this;
+		var wf = new WorkForm({
+			mode: "edit",
+			onSubmit: function( model ) { self.onSubmit( model ); }
+		});
+	},
 	edit: function( ev ) {
 		ev.stopPropagation();
 		var self = this;
@@ -378,17 +386,7 @@ const WorkPage = Backbone.View.extend({
 			var wf = new WorkForm({
 				mode:"edit",
 				model: model,
-				onSubmit: function( model ) {
-					if( model.dirty() ) {
-						model.save().then(r=> {
-							db.cawork.put( self.toDb( r ) ).then((k)=>console.log("Updated", k)).catch(console.error);
-							toastr.info( "Saved" )
-						}).catch(err=>{
-							console.log( err )
-							toastr.info( err.message, err.code );
-						});
-					}
-				}
+				onSubmit: function( model ) { self.onSubmit( model ); }
 			});
 		} else {
 			this.waiter.render();
@@ -400,22 +398,12 @@ const WorkPage = Backbone.View.extend({
 				var wf = new WorkForm({
 					mode:"edit",
 					model: model,
-					onSubmit: function( model ) {
-						if( model.dirty() ) {
-							model.save().then(r=> {
-								db.cawork.put( self.toDb( r ) ).then((k)=>console.log("Updated", k)).catch(console.error);
-								toastr.info( "Saved" )
-							}).catch(err=>{
-								console.log( err )
-								toastr.info( err.message, err.code );
-							});
-						}
-					}
+					onSubmit: function( model ) { self.onSubmit( model ); }
 				});
 			}).catch(err=>{
-							console.log( err )
-							toastr.info( err.message, err.code );
-						});
+				console.log( err )
+				toastr.info( err.message, err.code );
+			});
 		}
 	},
 	goBack: function( ev ) {
@@ -429,9 +417,7 @@ const WorkForm = Backbone.View.extend({
 	type: new Map(),
 	fileListTemplate: _.template($("#file-list-template").html()),
 	initialize: function( options ) {
-		this.options = $.extend({
-			mode: "view"
-		}, options);
+		this.options = $.extend({ mode: "view" }, options);
 		this.type.set( "income-tax-return", [ "form_16", "pan", "bank_statement", "adhaar_card" ] );
 		this.type.set( "gst", [ "gstin", "invoice_detail", "pan", "address_proof", "party_ledger" ] );
 		this.type.set( "audit", [ "pan", "tally_account", "bank_statement", "party_ledger", "gst_return_copy", "previous_year_audit_report" ] );
@@ -446,6 +432,7 @@ const WorkForm = Backbone.View.extend({
 			this.model = new Parse.Object("cawork");
 			this.$el.find("#type").val( "income-tax-return" ).change();
 		} 
+		this.$el.find(".message").val(this.model.get( "message" ));
 		if( this.options.mode == "view" ) {
 			this.$el.find(".done, .remove, .upload").hide();
 			this.$el.find("#type, .message").attr("disabled", "");
@@ -553,5 +540,5 @@ const Routes = Backbone.Router.extend({
 	}
 });
 app = new Routes();
-Backbone.history.start();
+Backbone.history.start({ pushState:true });
 

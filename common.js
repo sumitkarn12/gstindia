@@ -1,5 +1,4 @@
 
-
 Parse.initialize("gZcENVmcvqfSSeiIomLKUxH8lLkWhhfPOy7Hml6N", "Oqk4oWh3lpBY7W5ewRGGB4REw4zflX3xzgATxXpk");
 Parse.serverURL = 'https://parseapi.back4app.com/';
 Parse.Config.get().then(()=> console.log("Config loaded")).catch(( err )=> console.info( "error loading config", err));
@@ -74,7 +73,7 @@ $.fn.nox = function( settings ) {
 	this.show( 0 );
 	return this;
 };
-
+var Model = Backbone.Model.extend({ idAttribute: "objectId" });
 const Option = Backbone.Collection.extend({
 	initialize: function( attribute, el ) {
 		el.append( "<option value=''>All</option>" );
@@ -94,19 +93,26 @@ const UserManagement = Backbone.View.extend({
 		this.users = new Map();
 		return this;
 	},
+	toDb: function( parseObject ) {
+		var json = parseObject.toJSON();
+		json.createdAt = parseObject.get( "createdAt" );
+		json.updatedAt = parseObject.get( "updatedAt" );
+		return json;
+	},
 	fetch: function( id ) {
 		var self = this;
 		return new Promise(( resolve, reject )=>{
-			var user = self.users.get( id );
-			if( user ) {
-				resolve( user );
-			} else {
-				var userQuery = new Parse.Query( Parse.User );
-				userQuery.get( id ).then( res => {
-					self.users.set( res.id, res );
-					resolve( res );
-				}).catch( reject );
-			}
+			db.user.get( id ).then( result => {
+				if( result )  resolve( new Model(result) );
+				else {
+					var userQuery = new Parse.Query( Parse.User );
+					userQuery.get( id ).then( res => {
+						var json = self.toDb( res );
+						db.user.put( json );
+						resolve(new Model( json ))
+					}).catch( reject );
+				}
+			});
 		});
 	}
 });

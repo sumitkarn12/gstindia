@@ -1,0 +1,8 @@
+# Redirects from what the browser requests to what we serve
+
+/			/user/index.html	200
+/auth/*		/auth/index.html	200
+/faq/*		/faq/index.html		200
+/user/*		/user/index.html	200
+/ca/*			/ca/index.html		200
+/admin/*		/admin/index.html	200
