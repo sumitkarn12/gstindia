@@ -291,6 +291,7 @@ const WorkPage = Page.extend({
 				});
 				db.cawork.bulkPut( arr );
 				db.sync.put({ name: "cawork", at: new Date() });
+				self.waiter.stop();
 				resolve( arr );
 			}).catch( err => {
 				self.waiter.stop();
