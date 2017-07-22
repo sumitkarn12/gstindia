@@ -25,37 +25,16 @@
 
 <body>
 	
-	<!-- Auth page -->
-	<div class="page w3-animate-right" id="auth">
-		<div class="w3-theme w3-card-4 w3-bar">
-			<a class="w3-button w3-xlarge w3-bar-item" href="/">
-				<img src="/assets/imgs/gst_main.svg" style="max-width: 44px; max-height: 38px;"/>
-			</a>
-		</div>
-		<div id="register" class="w3-padding page" style="height: 90vh; width: 100%; display: flex; justify-content: center; align-items: center;">
-			<div style="max-width: 360px; max-height: 360px;">
-				<div class="w3-card">
-					<div class="w3-container w3-theme-l2"><h5>Register</h5></div>
-					<div class="w3-container w3-padding-16">
-						<form>
-							<input type="text" id="name" name="name" class="w3-input w3-border" required="" placeholder="Name" />
-							<div class="w3-section"></div>
-							<input type="email" id="email" name="email" class="w3-input w3-border" required="" placeholder="Email" />
-							<div class="w3-section"></div>
-							<input type="password" id="password" name="password" class="w3-input w3-border" required="" placeholder="Paswword" />
-							<div class="w3-section"></div>
-							<button class="w3-button w3-block w3-theme-l2">Submit</button>
-						</form>
-					</div>
-				</div>
-				<div class="w3-padding">
-					Already registered? <a href="#auth/login">Click here</a><br>
-					Forgot Password? <a href="#auth/reset-password">Click here</a>
-				</div>
-			</div>
-		</div>
-		<div id="login" class="w3-padding page" style="height: 90vh; width: 100%; display: flex; justify-content: center; align-items: center;">
-			<div style="max-width: 360px; max-height: 360px;">
+	<div class="w3-theme w3-card-4 w3-bar w3-top">
+		<a class="w3-button w3-xlarge w3-bar-item" href="/user">
+			<img src="/assets/imgs/gst_main.svg" style="height: 36px;"/>
+		</a>
+	</div>
+
+	<!-- Login -->
+	<div id="login" class="w3-padding page" style="display: none;">
+		<div style="height: 97vh; display: flex; justify-content: center; align-items: center;">
+			<div>
 				<div class="w3-card">
 					<div class="w3-container w3-theme-l2"><h5>Login</h5></div>
 					<div class="w3-container w3-padding-16">
@@ -64,30 +43,62 @@
 							<div class="w3-section"></div>
 							<input type="password" id="password" name="password" class="w3-input w3-border" required="" placeholder="Paswword" />
 							<div class="w3-section"></div>
+							<div id="waiter"></div>
 							<button class="w3-button w3-block w3-theme-l2">Submit</button>
 						</form>
 					</div>
 				</div>
 				<div class="w3-padding">
-					Not registered? <a href="#auth/register">Click here</a><br>
-					Forgot Password? <a href="#auth/reset-password">Click here</a>
+					Not registered? <a href="/auth/register.html">Click here</a><br>
+					Forgot Password? <a href="/auth/reset-password.html">Click here</a>
 				</div>
 			</div>
 		</div>
-		<div id="reset-password" class="w3-padding page" style="height: 90vh; width: 100%; display: flex; justify-content: center; align-items: center;">
-			<div style="max-width: 360px; max-height: 360px;">
+	</div>
+	<!-- Register -->
+	<div id="register" class="w3-padding page" style="display: none;">
+		<div style="height: 97vh; display: flex; justify-content: center; align-items: center;">
+			<div>
 				<div class="w3-card">
-					<div class="w3-container w3-theme-l2"><h5>Reset Password</h5></div>
+					<div class="w3-container w3-theme-l2"><h5>Register</h5></div>
 					<div class="w3-container w3-padding-16">
 						<form>
 							<input type="email" id="email" name="email" class="w3-input w3-border" required="" placeholder="Email" />
 							<div class="w3-section"></div>
+							<input type="text" id="name" name="name" class="w3-input w3-border" required="" placeholder="Name" />
+							<div class="w3-section"></div>
+							<input type="password" id="password" name="password" class="w3-input w3-border" required="" placeholder="Paswword" />
+							<div class="w3-section"></div>
+							<div id="waiter"></div>
 							<button class="w3-button w3-block w3-theme-l2">Submit</button>
 						</form>
 					</div>
 				</div>
 				<div class="w3-padding">
-					Not registered? <a href="#auth/register">Click here</a>
+					Already registered? <a href="/auth/login.html">Click here</a><br>
+					Forgot Password? <a href="/auth/reset-password.html">Click here</a>
+				</div>
+			</div>
+		</div>
+	</div>
+	<!-- Reset Password -->
+	<div id="reset-password" class="w3-padding page" style="display: none;">
+		<div style="height: 97vh; display: flex; justify-content: center; align-items: center;">
+			<div>
+				<div class="w3-card">
+					<div class="w3-container w3-theme-l2"><h5>Register</h5></div>
+					<div class="w3-container w3-padding-16">
+						<form>
+							<input type="email" id="email" name="email" class="w3-input w3-border" required="" placeholder="Email" />
+							<div class="w3-section"></div>
+							<div id="waiter"></div>
+							<button class="w3-button w3-block w3-theme-l2">Submit</button>
+						</form>
+					</div>
+				</div>
+				<div class="w3-padding">
+					Already registered? <a href="/auth/login.html">Click here</a><br>
+					Not Registered? <a href="/auth/register.html">Click here</a>
 				</div>
 			</div>
 		</div>
@@ -95,11 +106,6 @@
 
 	<!-- Profile page -->
 	<div class="page w3-animate-right" id="profile">
-		<div class="w3-theme w3-card-4 w3-bar w3-top">
-			<a class="w3-button w3-xxlarge w3-bar-item" href="/">
-				<img src="/assets/imgs/gst_main.svg" style="height: 36px;"/>
-			</a>
-		</div>
 		<div style="height: 100vh; width: 100%; display: flex; justify-content: center; align-items: center;">
 			<div style="width: 90%;">
 				<div class="w3-card">
@@ -111,12 +117,13 @@
 							<div class="w3-section"></div>
 							<input type="email" id="email" name="email" class="w3-input w3-border" required="" placeholder="Email" disabled="" />
 							<div class="w3-section"></div>
+							<div id="waiter"></div>
 							<button class="w3-button w3-block w3-theme-l2">Submit</button>
 						</form>
 					</div>
 				</div>
 				<div class="w3-padding-16">
-					<a href="#logout" class="w3-button w3-block w3-theme-d1">Logout</a>
+					<a href="/auth/logout.html" class="w3-button w3-block w3-theme-d1">Logout</a>
 				</div>
 			</div>
 		</div>
@@ -124,7 +131,7 @@
 
 	<script src="/common.js"></script>
 	<script src="index.js"></script>
-	<div class="w3-tiny w3-center w3-container w3-padding-16">
+	<div class="w3-tiny w3-center w3-container w3-padding-16 w3-bottom">
 		<div>Icons made by <a href="https://www.flaticon.com/authors/popcorns-arts" title="Icon Pond">Icon Pond</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a> is licensed by <a href="http://creativecommons.org/licenses/by/3.0/" title="Creative Commons BY 3.0" target="_blank">CC 3.0 BY</a></div>
 	</div>
 </body>

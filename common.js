@@ -147,6 +147,32 @@ const Collection = Backbone.Collection.extend({
 	})
 });
 
+
+const Page = Backbone.View.extend({
+	waiter: new Waiter(),
+	render: function() {
+		$(".page").hide();
+		this.$el.show();
+		console.log( this, "From render" );
+		return this;
+	},
+	goBack: function( ev ) {
+		ev.preventDefault();
+		history.back();
+	},
+	goHome: function( ev ) {
+		ev.preventDefault();
+		var loc = location.href;
+		loc = loc.substring( 0, loc.lastIndexOf("/") );
+		loc = loc.substring( loc.lastIndexOf("/")+1 );
+		app.navigate( loc+"/index.html", {trigger:true});
+		console.log( "Getting back to home of", loc );
+	},
+	onLinkClick: function( ev ) {
+		try { this.onLinkClick(ev); } catch(e) {}
+	}
+});
+
 const IndexPage = Backbone.View.extend({
 	el: "#index",
 	page_type: "user",
