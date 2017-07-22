@@ -547,5 +547,8 @@ const Routes = Backbone.Router.extend({
 app = new Routes();
 Backbone.history.start({ pushState:true });
 var currentLocation = location.href.substring( location.href.lastIndexOf("/") )
-app.navigate( "user"+currentLocation,  { trigger:true, replace:true });
+if( currentLocation == "/" )
+	app.navigate( "user/index.html",  { trigger:true, replace:true });
+else
+	app.navigate( "user"+currentLocation,  { trigger:true, replace:true });
 
