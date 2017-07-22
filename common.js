@@ -139,7 +139,6 @@ const Waiter = Backbone.View.extend({
 		try { this.onStop(); } catch ( e ) {}
 		return this;
 	}
-
 });
 const Collection = Backbone.Collection.extend({
 	model: Backbone.Model.extend({
@@ -170,9 +169,12 @@ const Page = Backbone.View.extend({
 	},
 	onLinkClick: function( ev ) {
 		try { this.onLinkClick(ev); } catch(e) {}
+	},
+	getUser: function( id ) {
+		if( !_users ) _users = new UserManagement();
+		return _users.fetch( id );
 	}
 });
-
 const IndexPage = Backbone.View.extend({
 	el: "#index",
 	page_type: "user",
@@ -187,27 +189,38 @@ const IndexPage = Backbone.View.extend({
 			$e.find(".name").html( user.get("name") );
 			$e.find(".email").html( user.get("email") );
 		}
-		var nox_panel_temp = `<a href="<%=redirectTo%>" data-message="<%=info%>" data-index="<%=index%>" class="nox-panel w3-animate-opacity"><img class="w3-image" src="<%= imageUrl %>" style="width:100%" /></a>`;
-		nox_panel_temp = _.template( nox_panel_temp );
-		var nox = this.$el.find("#nox").empty();
-		Parse.Config.get().then(conf=>{
-			var sliders = JSON.parse(conf.get( this.page_type+"_slider" ));
-			if( sliders ) {
-				$.each( sliders, ( i, e )=>{
-					el = nox.append( nox_panel_temp( e ) );
+		db.sync.get("config").then(response=>{
+			if ( response && ( new Date().getTime() <  (response.at.getTime() + 24*60*60*1000) ) ) {
+				var slider = JSON.parse(Parse.Config.current().get( this.page_type+"_slider" ));
+				this.renderSlider( slider );
+			} else {
+				Parse.Config.get().then(conf=>{
+					var sliders = JSON.parse(conf.get( this.page_type+"_slider" ));
+					this.renderSlider( sliders );
+					db.sync.put({name: "config", at: new Date() });
+				}).catch( er=> {
+					console.log( err );
+					toastr.error(er.message, er.code);
 				});
-				this.nox = nox.nox({
-					infoOn: nox.parent().find(".info"),
-					delay: 6000,
-					countOn: nox.parent().find(".count")
-				});
-				this.$el.find(".banner").show();
 			}
-		}).catch( er=> {
-			console.log( err );
-			toastr.error(er.message, er.code);
 		});
 		return this;
+	},
+	renderSlider: function( sliders ) {
+		var nox_panel_temp = `<a href="<%=redirectTo%>" data-message="<%=info%>" data-index="<%=index%>" class="nox-panel w3-animate-opacity"><img class="w3-image" src="<%= imageUrl %>" style="width:100%" /></a>`;
+		nox_panel_temp = _.template( nox_panel_temp );
+		if( sliders ) {
+			var nox = this.$el.find("#nox").empty();
+			$.each( sliders, ( i, e )=>{
+				el = nox.append( nox_panel_temp( e ) );
+			});
+			this.nox = nox.nox({
+				infoOn: nox.parent().find(".info"),
+				delay: 6000,
+				countOn: nox.parent().find(".count")
+			});
+			this.$el.find(".banner").show();
+		}
 	},
 	render: function() {
 		$(".page").hide();
@@ -419,5 +432,42 @@ const UserSelectorPage = Backbone.View.extend({
 	close: function( ev ) {
 		ev.preventDefault();
 		this.$el.remove();
+	}
+});
+const DateFilter = Backbone.View.extend({
+	template: `
+		<div>
+			<button class="w3-button w3-block w3-theme-l2" id="to-day" gldp-id="<%= pagename %>-datepicker"></button>
+			<div gldp-el="<%= pagename %>-datepicker" style="width:300px; height: 300px;"></div>
+		</div>
+	`,
+	options : {
+		name: "default",
+		callback: function(date) {}
+	},
+	initialize: function( options ) {
+		this.template = _.template(this.template);
+		$.extend( this.options, options );
+		this.$el.html( this.template({ pagename: this.options.pagename }) );
+		this.day = new Date();
+		this.$el.find("#to-day").html( this.day.toDateString() );
+		return this;
+	},
+	render: function() {
+		var self = this;
+		this.datepicker = this.$el.find("#to-day").glDatePicker({
+			onClick: function( el,cell, date, data ) {
+				self.$el.find("#to-day").html( date.toDateString() );
+				self.options.callback( date );
+			}
+		}).glDatePicker( true );
+		return this;
+	},
+	updateSelectableDates: function( dates ) {
+		var datesAsDate = dates.map(v=>{ return { date:new Date(v) }; });
+		$.extend(this.datepicker.options, {
+			selectableDates: datesAsDate
+		});
+		this.datepicker.render();
 	}
 });

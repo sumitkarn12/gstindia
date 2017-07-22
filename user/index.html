@@ -21,7 +21,10 @@
 	<script src="//cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/js/toastr.min.js"></script>
 	<script src="/assets/trumbowyg/dist/trumbowyg.min.js"></script>
 	<link rel="stylesheet" href="/assets/trumbowyg/dist/ui/trumbowyg.min.css" />
-	<link rel="manifest" href="manifest.json" />
+	<link rel="manifest" href="/manifest.json" />
+
+	 <link href="/assets/glDatePicker-2.0/styles/glDatePicker.default.css" rel="stylesheet" type="text/css">
+	<script src="/assets/glDatePicker-2.0/glDatePicker.min.js"></script>
 </head>
 <body>
 	
@@ -78,18 +81,13 @@
 			<button class="go-home w3-button w3-xxlarge">
 				<img src="/assets/imgs/gst_main.svg" style="height: 36px;"/>
 			</button>
-			<button class="w3-button w3-right w3-xxlarge refresh"><i class="fa fa-refresh"></i></button>
 		</div>
 		<div style="height: 70px;"></div>
 		<div class="w3-row">
 			<div class="w3-col s3 w3-hide-small"><p></p></div>
 			<div class="w3-col s12 m6 w3-container w3-padding-16">
 				<div class="w3-card">
-					<div class="day-panel w3-row">
-						<button class="w3-col s2 w3-button w3-block w3-theme-light" id="prev-day"><i class="fa fa-chevron-left"></i></button>
-						<button class="w3-col s8 w3-button w3-block w3-theme-l2" id="to-day"></button>
-						<button class="w3-col s2 w3-button w3-block w3-theme-light" id="next-day"><i class="fa fa-chevron-right"></i></button>
-					</div>
+					<div id="day-panel"></div>
 					<div id="waiter"></div>
 					<ul class="w3-ul" id="contents">
 						<li>Sorry no question for now. By the way you can ask question by clicking envelop button on the top of this screen</li>
@@ -127,6 +125,13 @@
 		<button class="w3-button w3-circle w3-theme-dark open-ask-modal" style="position:fixed; bottom: 15px; right: 15px; width: 70px; height: 70px;">
 			<i class="fa fa-plus fa-2x"></i>
 		</button>
+		<script type="text/template" id="list-template">
+			<li style="cursor:pointer;" class='question-list' id="li-<%= objectId %>" data-id="<%= objectId %>">
+				<div class="question"><%= question %></div>
+				<div class="w3-small"><%= user_email %></div>
+				<div class="w3-tiny updated-at"><%= updatedAt %></div>
+			</li>
+		</script>
 	</div>
 	<!-- Work page -->
 	<div class="page w3-animate-right" id="work">
@@ -135,18 +140,13 @@
 			<button class="go-home w3-button w3-xxlarge">
 				<img src="/assets/imgs/gst_main.svg" style="height: 36px;"/>
 			</button>
-			<button class="w3-button w3-xxlarge w3-right refresh"><i class="fa fa-refresh"></i></button>
 		</div>
 		<div style="height:70px;"></div>
 		<div class="w3-row">
 			<div class="w3-col s3 w3-hide-small"><p></p></div>
 			<div class="w3-col s12 m6 w3-container w3-padding-16">
 				<div class="w3-card">
-					<div class="day-panel w3-row">
-						<button class="w3-col s2 w3-button w3-block w3-theme-light" id="prev-day"><i class="fa fa-chevron-left"></i></button>
-						<button class="w3-col s8 w3-button w3-block w3-theme-l2" id="to-day"></button>
-						<button class="w3-col s2 w3-button w3-block w3-theme-light" id="next-day"><i class="fa fa-chevron-right"></i></button>
-					</div>
+					<div id="day-panel"></div>
 					<div id="waiter"></div>
 					<ul id="contents" class="w3-ul"></ul>
 				</div>
@@ -157,6 +157,7 @@
 			<div class="w3-col s3 w3-hide-small"><p></p></div>
 		</div>
 	</div>
+
 
 	<script type="text/template" id="add-modal-template">
 		<div class="w3-modal-content w3-animate-zoom">

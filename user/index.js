@@ -1,21 +1,14 @@
 
+// USER PAGE
+
 var app = null, _index = null, _ask_expert = null, _work = null, _auth = null, _users = null;
-const AskExpertPage = Backbone.View.extend({
+const AskExpertPage = Page.extend({
 	el: "#ask-expert",
-	collection: new Map(),
-	skip: 0,
-	limit: 20,
-	template: `
-		<li style="cursor:pointer;" class='question-list' id="li-<%= objectId %>" data-id="<%= objectId %>">
-			<div class="question"><%= question %></div>
-			<div class="w3-small"><%= user_email %></div>
-			<div class="w3-tiny updated-at"><%= updatedAt %></div>
-		</li>
-	`,
+	pagename: "asked",
 	initialize: function() {
 		this.waiter = new Waiter(()=> this.$el.find("#contents").hide(), ()=>this.$el.find("#contents").show()),
 		this.$el.find( "#waiter" ).append( this.waiter.$el );
-		this.template = _.template( this.template );
+		this.template = _.template( this.$el.find("#list-template").html() );
 		this.form = this.$el.find("#question").trumbowyg({
 			 btns: [
 				['formatting', 'bold', 'italic'],
@@ -37,27 +30,36 @@ const AskExpertPage = Backbone.View.extend({
 			this.$el.find("#email").val( this.userEmail );
 		this.$el.find("#contents").empty();
 		this.$el.find("#load-more-button").click();
+		this.renderFilterDate();
+		this.sync();
+		this.changeDay( new Date() );
+		return this;
+	},
+	renderFilterDate: function() {
+		var self = this;
+		this.datefilter = new DateFilter({
+			pagename: this.pagename,
+			callback: function( date ) { self.changeDay( date ) }
+		});
+		this.$el.find("#day-panel").html( this.datefilter.$el );
+		this.datefilter.render();
+	},
+	sync: function() {
 		db.sync.get("asked").then( object => {
 			if( object && new Date().getTime() < new Date(object.at.getTime()+12*60*60*1000).getTime() ) {
 				console.log( "No need to sync" );
+				db.asked.orderBy("date").uniqueKeys().then(keys => this.datefilter.updateSelectableDates(keys));
 			} else {
 				this.hardRefresh().then(response=>{
 					console.log( "refreshed", response );
 					this.$el.find(".refresh").click();
+					db.asked.orderBy("date").uniqueKeys().then(keys => this.datefilter.updateSelectableDates(keys));
 				}).catch(err=>{
 					console.log( "refreshed", err );
 					toastr.error( err.message, err.code );
 				});
 			}
 		});
-		this.day = new Date();
-		this.changeDay( this.day );
-		return this;
-	},
-	render: function( id ) {
-		$(".page").hide();
-		this.$el.show();
-		return this;
 	},
 	renderList: function( object ) {
 		var ul = this.$el.find("#contents");
@@ -68,9 +70,6 @@ const AskExpertPage = Backbone.View.extend({
 		"click .go-back": "goBack",
 		"click .go-home": "goHome",
 		"click .refresh": "refresh",
-		"click #prev-day": "prevDay",
-		"click #to-day": "toDay",
-		"click #next-day": "nextDay",
 		"click .question-list": "openAnswerModal",
 		"click .open-ask-modal": "openAskModal",
 		"click #ask-modal .done": "doneAskModal",
@@ -122,23 +121,7 @@ const AskExpertPage = Backbone.View.extend({
 			toArray(v=> resolve( v ));
 		});
 	},
-	toDay: function( ev ) {
-		ev.preventDefault();
-		this.day = new Date();
-		this.changeDay( this.day );
-	},
-	prevDay: function( ev ) {
-		ev.preventDefault();
-		this.day = new Date(this.day.getTime() - 24*60*60*1000)
-		this.changeDay( this.day );
-	},
-	nextDay: function( ev ) {
-		ev.preventDefault();
-		this.day = new Date(this.day.getTime() + 24*60*60*1000)
-		this.changeDay( this.day );
-	},
 	changeDay: function( day ) {
-		this.$el.find( "#to-day" ).html( day.toDateString() );
 		this.$el.find("#contents").empty();
 		this.find( day ).then( response => {
 			if( response.length > 0 )
@@ -146,10 +129,6 @@ const AskExpertPage = Backbone.View.extend({
 			else
 				this.$el.find("#contents").append( `<li>No question for now. You can ask question by click + button</li>` );
 		});
-	},
-	refresh: function( ev ) {
-		ev.preventDefault();
-		this.changeDay( this.day );
 	},
 	openAnswerModal: function( ev ) {
 		ev.preventDefault();
@@ -204,55 +183,56 @@ const AskExpertPage = Backbone.View.extend({
 			json.createdAt = e.get("createdAt");
 			json.updatedAt = e.get("updatedAt");
 			json.date = e.get("updatedAt").toDateString();
-			db.asked.put( json ).then( self.changeDay( self.day ) );
+			db.asked.put( json ).then( r => {
+				self.changeDay( e.get("createdAt") );
+				db.asked.orderBy("date").uniqueKeys().then(keys => this.datefilter.updateSelectableDates(keys));
+			});
 			toastr.info( "Saved" );
 		}).catch( err=> {
 			console.log( err );
 			toastr.error( err.message, err.code );
 		});
 		this.$el.find("#ask-modal").hide();
-	},
-	goHome: function( ev ) {
-		ev.preventDefault();
-		app.navigate( "user/index.html", { trigger:true });
-	},
-	goBack: function( ev ) {
-		ev.preventDefault();
-		history.back();
-	},
-	getUser: function( id ) {
-		if( !_users ) _users = new UserManagement();
-		return _users.fetch( id );
 	}
 });
-const WorkPage = Backbone.View.extend({
+const WorkPage = Page.extend({
 	el: "#work",
+	pagename: "cawork",
 	collection: new Map(),
 	template: _.template($("#cawork-list-template").html()),
 	initialize: function() {
 		this.waiter = new Waiter(()=> this.$el.find("#contents").hide(), ()=>this.$el.find("#contents").show()),
 		this.$el.find( "#waiter" ).append( this.waiter.$el );
+		this.renderFilterDate();
+		this.sync();
+		this.changeDay( new Date() );
+		return this;
+	},
+	renderFilterDate: function() {
+		var self = this;
+		this.datefilter = new DateFilter({
+			pagename: this.pagename,
+			callback: function( date ) { self.changeDay( date ) }
+		});
+		this.$el.find("#day-panel").html( this.datefilter.$el );
+		this.datefilter.render();
+	},
+	sync: function() {
 		db.sync.get("cawork").then( object => {
 			if( object && new Date().getTime() < new Date(object.at.getTime()+12*60*60*1000).getTime() ) {
 				console.log( "No need to sync" );
+				db.cawork.orderBy("date").uniqueKeys().then(keys => this.datefilter.updateSelectableDates(keys));
 			} else {
 				this.hardRefresh().then(response=>{
 					console.log( "refreshed", response );
-					this.$el.find(".refresh").click();
+					this.changeDay( new Date() );
+					db.cawork.orderBy("date").uniqueKeys().then(keys => this.datefilter.updateSelectableDates(keys));
 				}).catch(err=>{
 					console.log( "refreshed", err );
 					toastr.error( err.message, err.code );
 				});
 			}
 		});
-		this.day = new Date( new Date().toDateString() );
-		this.changeDay( this.day );
-		return this;
-	},
-	render: function() {
-		$(".page").hide();
-		this.$el.show();
-		return this;
 	},
 	renderList: function( object ) {
 		var ul = this.$el.find( "#contents" );
@@ -267,10 +247,6 @@ const WorkPage = Backbone.View.extend({
 		}
 	},
 	events: {
-		"click #prev-day": "prevDay",
-		"click #next-day": "nextDay",
-		"click #to-day": "toDay",
-		"click .refresh": "refresh",
 		"click .work-list": "view",
 		"click .create": "create",
 		"click .edit": "edit",
@@ -280,27 +256,11 @@ const WorkPage = Backbone.View.extend({
 	find: function( date ) {
 		var self = this;
 		return new Promise(( resolve, reject )=>{
-			db.cawork.where( "date" ).equalsIgnoreCase( date.toDateString() ).
-			toArray(v=> resolve( v ));
+			db.cawork.where( "date" ).equalsIgnoreCase( date.toDateString() )
+			.toArray(v=> resolve( v ));
 		});
 	},
-	toDay: function( ev ) {
-		ev.preventDefault();
-		this.day = new Date();
-		this.changeDay( this.day );
-	},
-	prevDay: function( ev ) {
-		ev.preventDefault();
-		this.day = new Date(this.day.getTime() - 24*60*60*1000)
-		this.changeDay( this.day );
-	},
-	nextDay: function( ev ) {
-		ev.preventDefault();
-		this.day = new Date(this.day.getTime() + 24*60*60*1000)
-		this.changeDay( this.day );
-	},
 	changeDay: function( day ) {
-		this.$el.find( "#to-day" ).html( day.toDateString() );
 		this.$el.find("#contents").empty();
 		this.find( day ).then( response => {
 			if( response.length > 0 )
@@ -308,10 +268,6 @@ const WorkPage = Backbone.View.extend({
 			else
 				this.$el.find("#contents").append( `<li>No question for now. You can ask question by click + button</li>` );
 		});
-	},
-	refresh: function( ev ) {
-		ev.preventDefault();
-		this.changeDay( this.day );
 	},
 	toDb: function( parseObject ) {
 		var json = parseObject.toJSON();
@@ -335,7 +291,6 @@ const WorkPage = Backbone.View.extend({
 				});
 				db.cawork.bulkPut( arr );
 				db.sync.put({ name: "cawork", at: new Date() });
-				self.waiter.stop();
 				resolve( arr );
 			}).catch( err => {
 				self.waiter.stop();
@@ -361,11 +316,12 @@ const WorkPage = Backbone.View.extend({
 		if( parseObject.dirty() ) {
 			parseObject.save().then(r=> {
 				this.collection.set( parseObject.id, parseObject );
+				this.changeDay( r.get("createdAt") );
 				db.cawork.put( self.toDb( r ) )
 				.then((k)=>{
 					console.log("Updated", k);
 					toastr.info( "Saved" );
-					self.$el.find('.refresh').click();
+					db.cawork.orderBy("date").uniqueKeys().then(keys => this.datefilter.updateSelectableDates(keys));
 				}).catch(console.error);
 			}).catch(err=>{
 				console.log( err )
@@ -411,14 +367,6 @@ const WorkPage = Backbone.View.extend({
 				toastr.info( err.message, err.code );
 			});
 		}
-	},
-	goHome: function( ev ) {
-		ev.preventDefault();
-		app.navigate( "user/index.html", { trigger:true });
-	},
-	goBack: function( ev ) {
-		ev.preventDefault();
-		history.back();
 	}
 });
 const WorkForm = Backbone.View.extend({
