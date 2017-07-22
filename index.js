@@ -533,6 +533,7 @@ const Routes = Backbone.Router.extend({
 		_work.render( id );
 	},
 	execute: function(callback, args, name) {
+		console.log( name );
 		if( name == "work" && !Parse.User.current() ) {
 			location.href="/auth";
 			return;
@@ -543,3 +544,4 @@ const Routes = Backbone.Router.extend({
 });
 app = new Routes();
 Backbone.history.start({ pushState:true });
+console.log( "Loaded" );
