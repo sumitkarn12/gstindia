@@ -568,8 +568,8 @@ const WorkForm = Backbone.View.extend({
 	tagName: "div",
 	className: "w3-modal",
 	type: new Map(),
-	fileListTemplate: _.template($("#file-list-template").html()),
 	initialize: function( options ) {
+		this.fileListTemplate = _.template($("#file-list-template").html());
 		this.options = $.extend({ mode: "view" }, options);
 		this.type.set( "income-tax-return", [ "form_16", "pan", "bank_statement", "adhaar_card" ] );
 		this.type.set( "gst", [ "gstin", "invoice_detail", "pan", "address_proof", "party_ledger" ] );
