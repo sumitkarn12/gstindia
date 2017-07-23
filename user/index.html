@@ -27,7 +27,7 @@
 	<script src="/assets/glDatePicker-2.0/glDatePicker.min.js"></script>
 </head>
 <body>
-	
+
 	<!-- Index Page -->
 	<div class="w3-animate-right page" id="index">
 		<div class="w3-theme w3-card-4 w3-top">
@@ -88,10 +88,12 @@
 			<div class="w3-col s12 m6 w3-container w3-padding-16">
 				<div class="w3-card">
 					<div id="day-panel"></div>
+					<div id="filter-panel" class="w3-row">
+						<select id="by-status" data-id="status" class="w3-select w3-col s6"></select>
+						<select id="by-user-email" data-id="user_email" class="w3-select w3-col s6"></select>
+					</div>
 					<div id="waiter"></div>
-					<ul class="w3-ul" id="contents">
-						<li>Sorry no question for now. By the way you can ask question by clicking envelop button on the top of this screen</li>
-					</ul>
+					<ul class="w3-ul" id="contents"></ul>
 				</div>
 			</div>
 			<div class="w3-col s3 w3-hide-small"><p></p></div>
@@ -110,22 +112,10 @@
 				</div>
 			</div>
 		</div>
-		<div class="w3-modal" id="answer-modal">
-			<div class="w3-modal-content w3-animate-top w3-card w3-theme-l3">
-				<div class="w3-container w3-padding-16">
-					<span class="w3-xlarge w3-right close" style="cursor: pointer;"><i class="fa fa-close"></i></span>
-					<div id="answer"></div>
-				</div>
-				<div class="w3-container w3-padding-16 w3-theme-l5">
-					<div class="w3-tiny answered-by"></div>
-					<div class="w3-tiny updated-at"></div>
-				</div>
-			</div>
-		</div>
 		<button class="w3-button w3-circle w3-theme-dark open-ask-modal" style="position:fixed; bottom: 15px; right: 15px; width: 70px; height: 70px;">
 			<i class="fa fa-plus fa-2x"></i>
 		</button>
-		<script type="text/template" id="list-template">
+		<script type="text/template" id="question-list-template">
 			<li style="cursor:pointer;" class='question-list' id="li-<%= objectId %>" data-id="<%= objectId %>">
 				<div class="question"><%= question %></div>
 				<div class="w3-small"><%= user_email %></div>
@@ -147,6 +137,10 @@
 			<div class="w3-col s12 m6 w3-container w3-padding-16">
 				<div class="w3-card">
 					<div id="day-panel"></div>
+					<div id="filter-panel" class="w3-row">
+						<select id="by-user" data-id="user" class="w3-select w3-col s6"></select>
+						<select id="by-type" data-id="type" class="w3-select w3-col s6"></select>
+					</div>
 					<div id="waiter"></div>
 					<ul id="contents" class="w3-ul"></ul>
 				</div>
@@ -156,8 +150,18 @@
 			</div>	
 			<div class="w3-col s3 w3-hide-small"><p></p></div>
 		</div>
+		<script type="text/template" id="template">
+			<li id="li-<%= objectId %>" data-id="<%= objectId %>" class="work-list w3-display-container" style="cursor: pointer;">
+				<div>
+					<div><%= type %></div>
+					<div class="w3-tiny updated-at"><%= updatedAt %></div>
+				</div>
+				<div class="w3-display-right">
+					<button class="w3-button edit" data-id="<%= objectId %>"><i class="fa fa-edit"></i></button>
+				</div>
+			</li>
+		</script>
 	</div>
-
 
 	<script type="text/template" id="add-modal-template">
 		<div class="w3-modal-content w3-animate-zoom">
@@ -190,17 +194,6 @@
 				<button style="display:none;" class="w3-button remove <%= type %>" data-type="<%= type %>">
 					<i class="fa fa-close"></i>
 				</button>
-			</div>
-		</li>
-	</script>
-	<script type="text/template" id="cawork-list-template">
-		<li id="li-<%= objectId %>" data-id="<%= objectId %>" class="work-list w3-display-container" style="cursor: pointer;">
-			<div>
-				<div><%= type %></div>
-				<div class="w3-tiny updated-at"><%= updatedAt %></div>
-			</div>
-			<div class="w3-display-right">
-				<button class="w3-button edit" data-id="<%= objectId %>"><i class="fa fa-edit"></i></button>
 			</div>
 		</li>
 	</script>

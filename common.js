@@ -10,7 +10,6 @@ db.version( 1 ).stores({
 	user: "objectId, name, email, mobile",
 	sync: "name, at"
 });
-
 toastr.options = {
 	"progressBar": true,
 	"positionClass": "toast-bottom-left"
@@ -146,14 +145,89 @@ const Collection = Backbone.Collection.extend({
 	})
 });
 
-
 const Page = Backbone.View.extend({
 	waiter: new Waiter(),
+	pagename: "pagename",
+	sync_interval : 1000*60*60*12,
+	db: db.asked,
+	filterable: new Collection(),
 	render: function() {
 		$(".page").hide();
 		this.$el.show();
 		console.log( this, "From render" );
 		return this;
+	},
+	renderWaiter: function() {
+		this.waiter = new Waiter(()=> this.$el.find("#contents").hide(), ()=>this.$el.find("#contents").show()),
+		this.$el.find( "#waiter" ).append( this.waiter.$el );
+	},
+	renderFilterDate: function() {
+		var self = this;
+		this.datefilter = new DateFilter({
+			pagename: this.pagename,
+			callback: function( date ) { self.changeDay( date ) }
+		});
+		this.$el.find("#day-panel").html( this.datefilter.$el );
+		this.datefilter.render();
+	},
+	sync: function() {
+		db.sync.get( this.pagename ).then( object => {
+			if( object && new Date().getTime() < new Date(object.at.getTime()+this.sync_interval).getTime() ) {
+				console.log( "No need to sync", this.pagename );
+				this.db.orderBy("date").uniqueKeys().then(keys => this.datefilter.updateSelectableDates(keys));
+			} else {
+				this.hardRefresh().then(response=>{
+					console.log( "refreshed", this.pagename, response );
+					this.changeDay( new Date() );
+					this.db.orderBy("date").uniqueKeys().then(keys => this.datefilter.updateSelectableDates(keys));
+				}).catch(err=>{
+					console.log( "refreshed", err );
+					toastr.error( err.message, err.code );
+				});
+			}
+		});
+	},
+	find: function( date ) {
+		var self = this;
+		return new Promise(( resolve, reject )=>{
+			self.db.where( "date" ).equalsIgnoreCase( date.toDateString() )
+			.toArray(v=>{
+				resolve( v );
+			});
+		});
+	},
+	changeDay: function( day ) {
+		this.$el.find("#contents").empty();
+		this.filterable.reset();
+		this.find( day ).then( response => {
+			if( response.length > 0 )
+				$.each( response, (index, el) => this.renderList( el ) );
+			else
+				this.$el.find("#contents").append( `<li>No question for now. You can ask question by click + button</li>` );
+			this.applyFilter( null );
+		});
+	},
+	hardRefresh: function() {
+		var self = this;
+		return new Promise( (resolve, reject )=>{
+			this.waiter.render();
+			var q = new Parse.Query( Parse.Object.extend( this.pagename ) );
+			q.limit( 1000 );
+			q.descending( "updatedAt" );
+			q.find().then(res=>{
+				var arr = [];
+				$.each( res, ( i, e ) => {
+					arr.push( self.toDb( e ) );
+				});
+				self.db.bulkPut( arr );
+				db.sync.put({ name: this.pagename, at: new Date() });
+				self.waiter.stop();
+				resolve( arr );
+			}).catch( err => {
+				self.waiter.stop();
+				reject( err );
+			});
+		});
 	},
 	goBack: function( ev ) {
 		ev.preventDefault();
@@ -173,6 +247,22 @@ const Page = Backbone.View.extend({
 	getUser: function( id ) {
 		if( !_users ) _users = new UserManagement();
 		return _users.fetch( id );
+	},
+	applyFilter: function( ev ) {
+		var filterObject = new Model();
+		this.$el.find("#filter-panel select").each((i,el)=>{
+			el = $(el);
+			if( $.trim( el.val() ) != "" ) {
+				filterObject.set( el.data("id"), el.val() );
+			}
+		});
+		filterObject = filterObject.toJSON();
+		var items = this.filterable.where( filterObject );
+		if( items.length ) {
+			this.$el.find("#contents li").hide();
+			items.forEach((v)=> this.$el.find("#li-"+v.id).show());
+		}
+		console.log( filterObject, items );
 	}
 });
 const IndexPage = Backbone.View.extend({
@@ -191,8 +281,11 @@ const IndexPage = Backbone.View.extend({
 		}
 		db.sync.get("config").then(response=>{
 			if ( response && ( new Date().getTime() <  (response.at.getTime() + 24*60*60*1000) ) ) {
-				var slider = JSON.parse(Parse.Config.current().get( this.page_type+"_slider" ));
-				this.renderSlider( slider );
+				var json = Parse.Config.current().get( this.page_type+"_slider" );
+				if( json ) {
+					var slider = JSON.parse( json );
+					this.renderSlider( slider );
+				}
 			} else {
 				Parse.Config.get().then(conf=>{
 					var sliders = JSON.parse(conf.get( this.page_type+"_slider" ));
@@ -469,5 +562,224 @@ const DateFilter = Backbone.View.extend({
 			selectableDates: datesAsDate
 		});
 		this.datepicker.render();
+	}
+});
+const WorkForm = Backbone.View.extend({
+	tagName: "div",
+	className: "w3-modal",
+	type: new Map(),
+	fileListTemplate: _.template($("#file-list-template").html()),
+	initialize: function( options ) {
+		this.options = $.extend({ mode: "view" }, options);
+		this.type.set( "income-tax-return", [ "form_16", "pan", "bank_statement", "adhaar_card" ] );
+		this.type.set( "gst", [ "gstin", "invoice_detail", "pan", "address_proof", "party_ledger" ] );
+		this.type.set( "audit", [ "pan", "tally_account", "bank_statement", "party_ledger", "gst_return_copy", "previous_year_audit_report" ] );
+		this.$el.html( $("#add-modal-template").html() );
+		$("body").append( this.$el );
+		this.$el.show();
+		this.$el.find("#type").change("");
+		if( this.options.model ) {
+			this.model = this.options.model;
+			this.$el.find("#type").val( this.model.get("type")).change();
+		} else {
+			this.model = new Parse.Object("cawork");
+			this.$el.find("#type").val( "income-tax-return" ).change();
+		} 
+		this.$el.find(".message").val(this.model.get( "message" ));
+		if( this.options.mode == "view" ) {
+			this.$el.find(".done, .remove, .upload").hide();
+			this.$el.find("#type, .message").attr("disabled", "");
+		} else {
+			this.$el.find(".done").show();
+			this.$el.find("#type, .message").removeAttr('disabled');
+		}
+		return this;
+	},
+	events: {
+		"click .close": "close",
+		"click .done": "done",
+		"change #type": "updateFileList",
+		"click .upload": "uploadFile",
+		"click .files .remove": "removeFile"
+	},
+	uploadFile: function( ev ) {
+		ev.preventDefault();
+		var type = $( ev.currentTarget ).data("type");
+		var fileWindow = new FileWindow( type );
+		fileWindow.render( res => {
+			this.model.add( "files", res );
+			var li = $(this.fileListTemplate( res ));
+			li.find( ".upload" ).hide();
+			li.find( ".remove" ).show();
+			li.find( ".download" ).show();
+			li.find( ".download" ).attr("href", res.file.url());
+			this.$el.find(".files").find( "."+res.type ).remove();
+			this.$el.find(".files").append( li );
+		});
+	},
+	updateFileList : function( ev ) {
+		ev.preventDefault();
+		var self = this;
+		var val = $( ev.currentTarget ).val();
+		this.model.set( "type", val );
+		var types = this.type.get( val );
+		this.$el.find(".files").empty();
+		$.each( types, ( i, e )=> {
+			var filesFromModel = this.model.get("files");
+			var li = "";
+			if( filesFromModel && filesFromModel.filter(v=>(v.type == e )).length ) {
+				var fileObject = filesFromModel.filter(v=>(v.type == e ));
+				fileObject = fileObject[0];
+				li = $(self.fileListTemplate( fileObject ));
+				li.find( ".upload" ).hide();
+				li.find( ".download" ).attr("href", fileObject.file.url);
+				li.find( ".remove, .download" ).show();
+			} else {
+				li = self.fileListTemplate({ type: e });
+				li = $( li );
+				li.find( ".upload" ).show();
+				li.find( ".remove, .download" ).hide();
+			}
+			this.$el.find(".files").append( li );
+		});
+	},
+	removeFile: function( ev ) {
+		ev.preventDefault();
+		var type = $(ev.currentTarget).data( "type" );
+		var files = this.model.get("files");
+		files = files.filter( v=>( v.type != type ));
+		this.model.set("files", files);
+		this.$el.find(".files>."+type).remove();
+	},
+	done: function( ev ) {
+		ev.preventDefault();
+		var message = $.trim(this.$el.find(".message").val());
+		if( message != "" ) this.model.set( "message", message );
+		try { this.options.onSubmit( this.model ); } catch(e){}
+		this.$el.remove();
+	},
+	close: function( ev ) {
+		ev.preventDefault();
+		this.$el.remove();
+		if( this.options.onCancel ) this.options.onCancel();
+	}
+});
+const AnswerPage = Backbone.View.extend({
+	tagName: "div",
+	className: "w3-modal",
+	options: {
+		mode: "view",
+		model: new Model(),
+		callback: function( mdl ) {}
+	},
+	template: `
+			<div class="w3-modal-content w3-animate-zoom">
+				<div class="w3-row">
+					<div class="w3-col s12 m6 question-area">
+						<div class="w3-card">
+							<span class="w3-xlarge w3-right w3-container close" style="cursor: pointer;"><i class="fa fa-close"></i></span>
+							<div id="question" class="w3-padding w3-theme-light"></div>
+							<ul class="w3-ul w3-border-top w3-tiny">
+								<li class="user-email"></li>
+								<li class="created-at"></li>
+							</il>
+						</div>
+						<div class="w3-section"></div>
+						<ul class="w3-card w3-ul">
+							<li>Answered by</li>
+							<li class="answered-by w3-tiny"></li>
+							<li class="answered-at w3-tiny"></li>
+						</ul>
+					</div>
+					<div class="w3-col s12 m6 w3-container answer-area">
+						<div class="w3-padding-16" id="answer-view">
+							<div id="answer"  class="w3-card w3-padding"></div>
+						</div>
+						<div id="answer-edit">
+							<div id="answer-form"></div>
+						</div>
+					</div>
+				</div>
+				<button class="w3-button w3-block w3-theme done"><i class="fa fa-check"></i></button>
+			</div>
+	`,
+	initialize: function( options ) {
+		$.extend( this.options, options );
+		this.$el.html( this.template );
+		this.tbw = this.$el.find("#answer-form").trumbowyg({
+			btns: [
+				['formatting',"bold", "italic"],
+				['link', 'insertImage', 'orderedList'],
+				['fullscreen']
+			],
+			svgPath: '/assets/trumbowyg/dist/ui/icons.svg'
+		});
+		this.tbw.on( "tbwchange", (ev)=> this.changeDoneState( ev )  );
+		this.tbw.on( "tbwpaste", (ev)=> this.changeDoneState( ev ) );
+		$("body").append( this.$el );
+		this.$el.show();
+		this.renderAnswer();
+		if( this.options.mode == "edit" ) {
+			this.$el.find("#answer-edit").show();
+			this.$el.find("#answer-view, .done").hide();
+		} else {
+			this.$el.find("#answer-edit").hide();
+			this.$el.find("#answer-view").show();
+		}
+		return this;
+	},
+	changeDoneState: function( ev ) {
+		ev.preventDefault();
+		var text = $.trim($( ev.currentTarget ).text());
+		if( text == "" )
+			this.$el.find(".done").hide();
+		else
+			this.$el.find(".done").show();
+	},
+	events: {
+		"click .close": "close",
+		"click .done": "done"
+	},
+	getUser: function( id ) {
+		if( !_users ) _users = new UserManagement();
+		return _users.fetch( id );
+	},
+	renderAnswer: function() {
+		this.$el.find(".done").hide();
+		this.$el.find("#question").html( this.options.model.get("question") );
+		this.$el.find(".user-email").html( this.options.model.get("user_email") );
+		this.$el.find(".created-at").html( this.options.model.get("createdAt").toLocaleString() );
+		if( this.options.model.has( "answer" ) ) {
+			var answeredById = null;
+			if( this.options.model.get( "answeredBy" ).id ) {
+				answeredById = this.options.model.get( "answeredBy" ).id;
+			} else {
+				answeredById = this.options.model.get( "answeredBy" );
+			}
+			this.getUser( answeredById ).then((r)=>{
+				this.$el.find(".answered-by").html( r.get("name") );
+			});
+			this.$el.find(".answered-at").html( this.options.model.get("answeredAt").toLocaleString() );
+			this.$el.find("#answer").html( this.options.model.get("answer") );
+			this.$el.find("#answer-form").html( this.options.model.get("answer") );
+			this.$el.find(".answered-at").parent().show();
+		} else {
+			this.$el.find("#answer").html( "Not answered yet" );
+			this.$el.find("#answer-form").html( "" );
+			this.$el.find(".answered-at").parent().hide();
+		}
+	},
+	close: function( ev ) {
+		ev.preventDefault();
+		this.$el.remove();
+	},
+	done: function( ev ) {
+		ev.preventDefault();
+		this.$el.find(".close").click();
+		var answer = this.$el.find( "#answer-form" ).html();
+		this.options.model.set( "answer", answer );
+		this.options.model.set( "answeredBy", Parse.User.current() );
+		this.options.model.set( "answeredAt", new Date() );
+		this.options.callback( this.options.model );
 	}
 });
