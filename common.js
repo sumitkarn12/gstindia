@@ -284,12 +284,12 @@ const IndexPage = Backbone.View.extend({
 				var json = Parse.Config.current().get( this.page_type+"_slider" );
 				if( json ) {
 					var slider = JSON.parse( json );
-					this.renderSlider( slider );
+					this.createSlider( slider );
 				}
 			} else {
 				Parse.Config.get().then(conf=>{
 					var sliders = JSON.parse(conf.get( this.page_type+"_slider" ));
-					this.renderSlider( sliders );
+					this.createSlider( sliders );
 					db.sync.put({name: "config", at: new Date() });
 				}).catch( er=> {
 					console.log( err );
@@ -299,21 +299,24 @@ const IndexPage = Backbone.View.extend({
 		});
 		return this;
 	},
-	renderSlider: function( sliders ) {
-		var nox_panel_temp = `<a href="<%=redirectTo%>" data-message="<%=info%>" data-index="<%=index%>" class="nox-panel w3-animate-opacity"><img class="w3-image" src="<%= imageUrl %>" style="width:100%" /></a>`;
-		nox_panel_temp = _.template( nox_panel_temp );
-		if( sliders ) {
-			var nox = this.$el.find("#nox").empty();
-			$.each( sliders, ( i, e )=>{
-				el = nox.append( nox_panel_temp( e ) );
-			});
-			this.nox = nox.nox({
-				infoOn: nox.parent().find(".info"),
-				delay: 6000,
-				countOn: nox.parent().find(".count")
-			});
-			this.$el.find(".banner").show();
-		}
+	createSlider: function( sliderObject ) {
+		this.bxslider = $("<ul></ul>");
+		this.bxslider.addClass('bxslider');
+		sliderObject.forEach(slide=>{
+			let img = $("<img>");
+			img.attr( "title", `<a href="${slide.redirectTo}">${slide.info}</a>` );
+			img.addClass('w3-image');
+			img.attr('src', slide.imageUrl);
+			let li = $("<li></li>");
+			li.html( img );
+			this.bxslider.append( li );
+		});
+		this.$el.find(".banner").html( this.bxslider );
+		this.bxslider.bxSlider({
+			auto: true,
+			captions: true
+		});
+		this.$el.find(".banner").show();
 	},
 	render: function() {
 		$(".page").hide();
